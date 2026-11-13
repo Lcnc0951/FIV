@@ -1,0 +1,49 @@
+name: FIV
+options:
+  bundleIdPrefix: no.fiv
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    DEVELOPMENT_TEAM: ""
+    TARGETED_DEVICE_FAMILY: "1"
+targets:
+  FIV:
+    type: application
+    platform: iOS
+    sources:
+      - path: FIV
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.fiv.app
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: FIV
+        INFOPLIST_KEY_NSCameraUsageDescription: "FIV bruker kameraet og LiDAR-sensoren til å skanne kroppen din og lage et treningsprogram tilpasset deg. Bildene forlater aldri telefonen."
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIRequiredDeviceCapabilities: arkit
+  FIVTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FIVTests
+    dependencies:
+      - target: FIV
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/FIV.app/FIV"
+schemes:
+  FIV:
+    build:
+      targets:
+        FIV: all
+        FIVTests: [test]
+    test:
+      targets:
+        - FIVTests
