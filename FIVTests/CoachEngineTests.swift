@@ -149,4 +149,40 @@ final class CoachEngineTests: XCTestCase {
         XCTAssertEqual(fat.source, .bmiEstimate)
         XCTAssertGreaterThan(fat.bodyFatPercent, 10)
     }
+
+    func testPhysiqueGoalShiftsPriorities() {
+        var p = profile()
+        p.physique = .vTaper
+        let a = BodyAnalyzer.analyze(profile: p, scan: nil)
+        XCTAssertGreaterThan(a.priorities[.lats] ?? 0, a.priorities[.quads] ?? 0)
+        p.physique = .lowerBody
+        let b = BodyAnalyzer.analyze(profile: p, scan: nil)
+        XCTAssertGreaterThan(b.priorities[.glutes] ?? 0, b.priorities[.chest] ?? 0)
+    }
+
+    func testMuscleReportFlagsNarrowUpperBodyForVTaper() {
+        var p = profile()
+        p.physique = .vTaper
+        var scan = sampleScan
+        scan.chestCm = 95; scan.waistCm = 86
+        let report = MuscleAnalyzer.analyze(profile: p, scan: scan, bodyFat: 15)
+        let upper = report.regions.first { $0.name == "Overkropp vs. midje" }
+        XCTAssertEqual(upper?.prioritize, true)
+        XCTAssertNotNil(report.overallScore)
+    }
+
+    func testPosturePlanFromScanAndGoals() {
+        var p = profile()
+        p.postureGoals = [.lowerBack]
+        var scan = ScanMeasurements()
+        scan.forwardHeadCm = 8
+        scan.roundedShouldersCm = 6
+        let plan = PostureAnalyzer.plan(profile: p, scan: scan)
+        let ids = plan.drills.map(\.id)
+        XCTAssertTrue(ids.contains("chin_tuck"))
+        XCTAssertTrue(ids.contains("face_pull"))
+        XCTAssertTrue(ids.contains("curl_up"))
+        XCTAssertLessThanOrEqual(plan.drills.count, 7)
+        for d in plan.drills { if let a = d.animation { XCTAssertNotNil(ExerciseAnimationStore.animation(named: a), a) } }
+    }
 }

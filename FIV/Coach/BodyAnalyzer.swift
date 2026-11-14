@@ -38,6 +38,23 @@ enum BodyAnalyzer {
         var a = BodyAnalysis()
         a.cardioEmphasis = profile.goal == .loseFat || profile.goal == .health ? 2 : 1
 
+        // Ønsket kroppsform
+        for (m, bias) in profile.physique.muscleBias { a.priorities[m, default: 1] += bias }
+        if profile.physique == .defined { a.cardioEmphasis = max(a.cardioEmphasis, 2) }
+
+        // Egne holdningsmål
+        if !profile.postureGoals.isDisjoint(with: [.upperBack, .neck, .shoulders]) {
+            a.priorities[.upperBack, default: 1] += 0.3
+            a.priorities[.lats, default: 1] += 0.1
+        }
+        if !profile.postureGoals.isDisjoint(with: [.lowerBack, .pelvis]) {
+            a.priorities[.abs, default: 1] += 0.25
+            a.priorities[.glutes, default: 1] += 0.2
+        }
+        if profile.postureGoals.contains(.shoulders) || profile.postureGoals.contains(.pelvis) {
+            a.postureFlags.insert(profile.postureGoals.contains(.pelvis) ? .hipTilt : .shoulderTilt)
+        }
+
         guard let scan else {
             a.findings.append(Finding(
                 title: "Ingen skann ennå",
@@ -210,6 +227,16 @@ enum BodyAnalyzer {
                     action: good ? "Fortsett slik." : "Juster kaloriene med ~150–250 kcal og sjekk skrittene.",
                     severity: good ? .positive : .attention))
             }
+        }
+
+        // Muskelbalanse mot ønsket kroppsform
+        let report = MuscleAnalyzer.analyze(profile: profile, scan: scan, bodyFat: a.bodyFatPercent)
+        for region in report.regions where region.prioritize {
+            for m in region.muscles { a.priorities[m, default: 1] += 0.2 }
+        }
+        if let rs = scan.roundedShouldersCm, rs >= 5 {
+            a.postureFlags.insert(.forwardHead)
+            a.priorities[.upperBack, default: 1] += 0.2
         }
 
         a.findings.sort { $0.severity > $1.severity }

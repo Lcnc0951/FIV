@@ -358,6 +358,21 @@ final class BodyScanner: NSObject, ObservableObject, ARSessionDelegate {
                 let shoulderMid = (l + r) / 2
                 let offset = head - shoulderMid
                 add("forwardHead", simd_dot(SIMD3(offset.x, 0, offset.z), s.facing))
+                // Fremoverrullede skuldre: skulderledd foran øvre ryggrad (spine_7)
+                if let upperSpine = s["spine_7_joint"] {
+                    let d = shoulderMid - upperSpine
+                    add("roundedShoulders", simd_dot(SIMD3(d.x, 0, d.z), s.facing))
+                }
+            }
+        }
+        // Øvre rygg-kurve: vinkel mellom nedre (hofte→spine_4) og øvre (spine_4→nakke) del av ryggraden i sagittalplanet
+        if let mid = s["spine_4_joint"] {
+            let lower = mid - hips, upper = neck - mid
+            func sagittal(_ v: SIMD3<Float>) -> SIMD2<Float> { SIMD2(simd_dot(SIMD3(v.x, 0, v.z), s.facing), v.y) }
+            let a = sagittal(lower), b = sagittal(upper)
+            if simd_length(a) > 0.05, simd_length(b) > 0.05 {
+                let angle = atan2(b.x, b.y) - atan2(a.x, a.y)
+                add("thoracic", angle * 180 / .pi)
             }
         }
         return waist != nil
@@ -401,6 +416,8 @@ final class BodyScanner: NSObject, ObservableObject, ARSessionDelegate {
         m.shoulderTiltDeg = round1(median("shoulderTilt"))
         m.hipTiltDeg = round1(median("hipTilt"))
         m.forwardHeadCm = round1(cm("forwardHead").map { max(0, $0) })
+        m.roundedShouldersCm = round1(cm("roundedShoulders"))
+        m.thoracicAngleDeg = round1(median("thoracic"))
         m.usedLiDAR = usedLiDAR
         m.sampleCount = frontSamples + sideSamples
 

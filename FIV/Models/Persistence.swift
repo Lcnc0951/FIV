@@ -17,6 +17,8 @@ final class UserProfile {
     /// 0 = automatisk mål.
     var targetBodyFat: Double = 0
     var limitationsRaw: [String] = []
+    var physiqueRaw: String = PhysiqueGoal.balanced.rawValue
+    var postureGoalsRaw: [String] = []
     var createdAt: Date = Date()
 
     init() {}
@@ -50,6 +52,14 @@ final class UserProfile {
             activeLocationId = newValue.id.uuidString
         }
     }
+    var physique: PhysiqueGoal {
+        get { PhysiqueGoal(rawValue: physiqueRaw) ?? .balanced }
+        set { physiqueRaw = newValue.rawValue }
+    }
+    var postureGoals: Set<PostureGoal> {
+        get { Set(postureGoalsRaw.compactMap(PostureGoal.init(rawValue:))) }
+        set { postureGoalsRaw = newValue.map(\.rawValue).sorted() }
+    }
     var limitations: Set<Limitation> {
         get { Set(limitationsRaw.compactMap(Limitation.init(rawValue:))) }
         set { limitationsRaw = newValue.map(\.rawValue).sorted() }
@@ -65,7 +75,8 @@ final class UserProfile {
         ProfileData(sex: sex, age: age, heightCm: heightCm, weightKg: weightKg,
                     goal: goal, experience: experience, daysPerWeek: daysPerWeek,
                     sessionMinutes: sessionMinutes, location: location, limitations: limitations,
-                    targetBodyFat: targetBodyFat > 0 ? targetBodyFat : nil)
+                    targetBodyFat: targetBodyFat > 0 ? targetBodyFat : nil,
+                    physique: physique, postureGoals: postureGoals)
     }
 }
 

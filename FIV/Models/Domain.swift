@@ -230,6 +230,89 @@ struct ProfileData: Codable, Equatable {
     var limitations: Set<Limitation>
     /// Ønsket fettprosent. nil = PT-en velger et sunt mål.
     var targetBodyFat: Double? = nil
+    /// Hvordan du ønsker at kroppen skal se ut / fungere.
+    var physique: PhysiqueGoal = .balanced
+    /// Holdningsområder du vil forbedre (i tillegg til det skannet finner).
+    var postureGoals: Set<PostureGoal> = []
+}
+
+/// Ønsket kroppsform. Styrer hvilke muskler som prioriteres.
+enum PhysiqueGoal: String, Codable, CaseIterable, Identifiable {
+    case balanced, vTaper, defined, powerful, lowerBody, functional
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .balanced: "Balansert og symmetrisk"
+        case .vTaper: "Bred overkropp (V-form)"
+        case .defined: "Slank og definert"
+        case .powerful: "Kraftig og sterk"
+        case .lowerBody: "Sterke bein og sete"
+        case .functional: "Funksjonell og atletisk"
+        }
+    }
+
+    var detail: String {
+        switch self {
+        case .balanced: "Jevne proporsjoner — ingen muskelgruppe dominerer."
+        case .vTaper: "Bredere skuldre og rygg, smal midje."
+        case .defined: "Synlige muskler: lav fettprosent og moderat muskelmasse."
+        case .powerful: "Mye muskelmasse i store muskelgrupper og tunge basisløft."
+        case .lowerBody: "Ekstra fokus på sete, lår og hofter."
+        case .functional: "Sterk kjerne, ettsidig styrke og god bevegelighet."
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .balanced: "figure.stand"
+        case .vTaper: "figure.arms.open"
+        case .defined: "sparkles"
+        case .powerful: "figure.strengthtraining.traditional"
+        case .lowerBody: "figure.step.training"
+        case .functional: "figure.cross.training"
+        }
+    }
+
+    /// Ekstra prioritet per muskel for denne kroppsformen.
+    var muscleBias: [Muscle: Double] {
+        switch self {
+        case .balanced: [:]
+        case .vTaper: [.lats: 0.35, .sideDelts: 0.4, .upperBack: 0.15, .quads: -0.1, .glutes: -0.1]
+        case .defined: [.abs: 0.2, .sideDelts: 0.15]
+        case .powerful: [.quads: 0.2, .glutes: 0.2, .hamstrings: 0.15, .chest: 0.15, .upperBack: 0.15]
+        case .lowerBody: [.glutes: 0.45, .hamstrings: 0.3, .quads: 0.25, .chest: -0.15, .biceps: -0.15, .triceps: -0.1]
+        case .functional: [.abs: 0.35, .upperBack: 0.2, .glutes: 0.15]
+        }
+    }
+}
+
+/// Holdningsmål brukeren kan velge.
+enum PostureGoal: String, Codable, CaseIterable, Identifiable {
+    case upperBack, neck, shoulders, lowerBack, pelvis, mobility
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .upperBack: "Rettere øvre rygg (mindre rundrygg)"
+        case .neck: "Mindre fremoverlent hode / nakke"
+        case .shoulders: "Mindre fremoverrullede eller skjeve skuldre"
+        case .lowerBack: "Sterkere korsrygg"
+        case .pelvis: "Bedre bekkenstilling / svairygg"
+        case .mobility: "Generell bevegelighet"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .upperBack: "figure.stand"
+        case .neck: "person.bust"
+        case .shoulders: "figure.arms.open"
+        case .lowerBack: "figure.core.training"
+        case .pelvis: "figure.walk"
+        case .mobility: "figure.flexibility"
+        }
+    }
 }
 
 // MARK: - Skanneresultat
@@ -256,6 +339,10 @@ struct ScanMeasurements: Codable, Equatable {
     var hipTiltDeg: Double?
     /// Hodets horisontale avstand foran skulderlinjen.
     var forwardHeadCm: Double?
+    /// Skulderleddenes avstand foran øvre del av ryggraden (fremoverrullede skuldre).
+    var roundedShouldersCm: Double?
+    /// Øvre rygg-vinkel (kyfose-estimat) fra skjelettets ryggradsledd, grader.
+    var thoracicAngleDeg: Double?
     var usedLiDAR: Bool = false
     var sampleCount: Int = 0
 

@@ -79,7 +79,8 @@ enum CoachService {
         let data = profile.data(at: location)
         let sorted = scans.sorted { $0.date > $1.date }
         let analysis = BodyAnalyzer.analyze(profile: data, scan: sorted.first?.measurements, previous: sorted.dropFirst().first?.measurements)
-        let program = ProgramGenerator.generate(profile: data, analysis: analysis)
+        let posture = PostureAnalyzer.plan(profile: data, scan: sorted.first?.measurements)
+        let program = ProgramGenerator.generate(profile: data, analysis: analysis, postureRoutine: posture.drills)
         // Rydd bort gamle program for samme sted
         if let old = try? context.fetch(FetchDescriptor<SavedProgram>()) {
             for p in old where p.program?.locationId == location.id { context.delete(p) }

@@ -250,6 +250,18 @@
       "a": {"upper": 10, "fore": 160},
       "b": {"upper": 90, "fore": 90}
     },
+    "wall_slide": {
+      "view": "front", "anchor": {"type": "ground"}, "props": [],
+      "a": {"upperL": -90, "foreL": -180, "upperR": 90, "foreR": 180},
+      "b": {"upperL": -155, "foreL": -165, "upperR": 155, "foreR": 165}
+    },
+    "hip_flexor": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "tempo": [2.0, 2.0],
+      "base": {"upper": 0, "fore": 0, "footR": -90},
+      "a": {"trunk": 0, "thighL": 85, "shinL": 0, "thighR": 0, "shinR": -90},
+      "b": {"trunk": -5, "thighL": 85, "shinL": -30, "thighR": -25, "shinR": -90}
+    },
     "carry": {
       "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
       "tempo": [0.6, 0.6],

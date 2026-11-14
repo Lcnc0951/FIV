@@ -53,6 +53,8 @@ struct TrainingProgram: Codable, Hashable {
     var cardio: CardioPlan
     var warmup: [String]
     var focusNotes: [String]
+    /// Holdningsrutine (valgfri for eldre lagrede program).
+    var postureRoutine: [PostureDrill]? = nil
 }
 
 // MARK: - Generator
@@ -70,7 +72,7 @@ enum ProgramGenerator {
         var slots: [Slot]
     }
 
-    static func generate(profile: ProfileData, analysis: BodyAnalysis, now: Date = Date()) -> TrainingProgram {
+    static func generate(profile: ProfileData, analysis: BodyAnalysis, postureRoutine: [PostureDrill] = [], now: Date = Date()) -> TrainingProgram {
         let templates = split(for: profile.daysPerWeek)
         let fullTarget = weeklyTargets(profile: profile, analysis: analysis)
         let maxSetsPerSession = max(10, Int(Double(profile.sessionMinutes - 8) / 2.8))
@@ -158,7 +160,17 @@ enum ProgramGenerator {
         }
 
         let finalVolume = weeklyVolume(days)
+        var notes = focusNotes(profile: profile, analysis: analysis)
+        if profile.physique != .balanced {
+            notes.append("Kroppsform-mål: \(profile.physique.label). Volumet er vektet mot musklene som former dette.")
+        }
+        if !days.flatMap(\.exercises).contains(where: { $0.exercise?.pattern == .verticalPull }) {
+            notes.append("PT-tips: En pull-up-stang i døra (ca. 300–500 kr) gir deg pull-ups og chin-ups — den beste øvelsen for rygg-bredde. Legg den til under Utstyr når du har den.")
+        }
         let coverage = Muscle.allCases.map { min(1, finalVolume[$0, default: 0] / max(fullTarget[$0, default: 1], 1)) }.reduce(0, +) / Double(Muscle.allCases.count)
+        if coverage < 0.8 {
+            notes.append("Med \(profile.daysPerWeek) økter à \(profile.sessionMinutes) min når vi bare ~\(Int(coverage * 100)) % av ideelt ukevolum. En ekstra økt eller lengre økter gir raskere fremgang — men dette programmet virker også.")
+        }
         return TrainingProgram(
             createdAt: now,
             locationId: profile.location.id,
@@ -171,10 +183,8 @@ enum ProgramGenerator {
             mesocycle: mesocycle(for: profile.experience),
             cardio: cardioPlan(profile: profile, analysis: analysis),
             warmup: warmup(analysis: analysis),
-            focusNotes: focusNotes(profile: profile, analysis: analysis)
-                + (days.flatMap(\.exercises).contains { $0.exercise?.pattern == .verticalPull } ? [] :
-                    ["PT-tips: En pull-up-stang i døra (ca. 300–500 kr) gir deg pull-ups og chin-ups — den beste øvelsen for rygg-bredde. Legg den til under Utstyr når du har den."])
-                + (coverage < 0.8 ? ["Med \(profile.daysPerWeek) økter à \(profile.sessionMinutes) min når vi bare ~\(Int(coverage * 100)) % av ideelt ukevolum. En ekstra økt eller lengre økter gir raskere fremgang — men dette programmet virker også."] : []))
+            focusNotes: notes,
+            postureRoutine: postureRoutine.isEmpty ? nil : postureRoutine)
     }
 
     // MARK: Volum

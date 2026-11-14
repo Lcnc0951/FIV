@@ -232,6 +232,8 @@ struct ScanResultView: View {
                 row("Skulderskjevhet", m.shoulderTiltDeg, unit: "°", format: "%+.1f")
                 row("Bekkenskjevhet", m.hipTiltDeg, unit: "°", format: "%+.1f")
                 row("Hode foran skulder", m.forwardHeadCm, unit: "cm", format: "%.1f")
+                row("Skuldre foran rygg", m.roundedShouldersCm, unit: "cm", format: "%.1f")
+                row("Øvre rygg-kurve", m.thoracicAngleDeg, unit: "°", format: "%.0f")
                 row("Skulderbredde (ledd)", m.shoulderWidthCm, unit: "cm", format: "%.1f")
                 row("Armlengde V / H", m.armLengthLeftCm, unit: String(format: "/ %.1f cm", m.armLengthRightCm ?? 0), format: "%.1f")
                 row("Beinlengde V / H", m.legLengthLeftCm, unit: String(format: "/ %.1f cm", m.legLengthRightCm ?? 0), format: "%.1f")

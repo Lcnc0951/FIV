@@ -22,6 +22,7 @@ struct DashboardView: View {
                         nextWorkoutCard(day)
                     }
                     fatCard
+                    musclePostureCard
                     if let scan = scans.first {
                         bodyCard(scan)
                     }
@@ -73,6 +74,30 @@ struct DashboardView: View {
     }
 
     // MARK: Kort
+
+    private var musclePostureCard: some View {
+        let report = MuscleAnalyzer.analyze(profile: profile.data, scan: scans.first?.measurements, bodyFat: fat.bodyFatPercent)
+        let posture = PostureAnalyzer.plan(profile: profile.data, scan: scans.first?.measurements)
+        return NavigationLink {
+            MusclePostureView(profile: profile)
+        } label: {
+            Card {
+                HStack(spacing: 14) {
+                    Image(systemName: profile.physique.symbol).font(.system(size: 34)).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Muskler & holdning").font(.headline)
+                        Text(report.overallScore.map { "Kroppsform-score \($0)/100 · \(profile.physique.label)" } ?? profile.physique.label)
+                            .font(.subheadline)
+                        Text(posture.issues.isEmpty ? "Ingen holdningsavvik funnet" : "\(posture.issues.count) holdningspunkt · \(posture.drills.count) øvelser")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
 
     private var fatCard: some View {
         NavigationLink {

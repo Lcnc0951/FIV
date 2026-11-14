@@ -69,6 +69,8 @@ struct ProfileDraft {
     var daysPerWeek = 3
     var sessionMinutes = 60
     var limitations: Set<Limitation> = []
+    var physique: PhysiqueGoal = .balanced
+    var postureGoals: Set<PostureGoal> = []
     /// Brukes bare ved oppstart — senere redigeres steder i «Utstyr & steder».
     var locationPresets: Set<LocationPreset> = [.gym]
 
@@ -79,6 +81,7 @@ struct ProfileDraft {
         heightCm = profile.heightCm; weightKg = profile.weightKg; goal = profile.goal
         experience = profile.experience; daysPerWeek = profile.daysPerWeek
         sessionMinutes = profile.sessionMinutes; limitations = profile.limitations
+        physique = profile.physique; postureGoals = profile.postureGoals
         locationPresets = []
     }
 
@@ -86,6 +89,7 @@ struct ProfileDraft {
         p.name = name; p.sex = sex; p.birthYear = birthYear; p.heightCm = heightCm; p.weightKg = weightKg
         p.goal = goal; p.experience = experience; p.daysPerWeek = daysPerWeek
         p.sessionMinutes = sessionMinutes; p.limitations = limitations
+        p.physique = physique; p.postureGoals = postureGoals
         if !locationPresets.isEmpty {
             let locs = LocationPreset.allCases.filter(locationPresets.contains).map { $0.make() }
             p.locations = locs
@@ -156,6 +160,43 @@ struct ProfileForm: View {
                         }
                         .foregroundStyle(.primary)
                     }
+                }
+                SwiftUI.Section {
+                    ForEach(PhysiqueGoal.allCases) { goal in
+                        Button {
+                            draft.physique = goal
+                        } label: {
+                            HStack {
+                                Image(systemName: goal.symbol).foregroundStyle(.orange).frame(width: 28)
+                                VStack(alignment: .leading) {
+                                    Text(goal.label).font(.subheadline.bold())
+                                    Text(goal.detail).font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                if draft.physique == goal { Image(systemName: "checkmark.circle.fill").foregroundStyle(.orange) }
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                } header: {
+                    Text("Ønsket kroppsform")
+                } footer: {
+                    Text("PT-en sammenligner proporsjonene dine fra skannet med denne formen og gir ekstra volum til det som mangler.")
+                }
+                SwiftUI.Section {
+                    ForEach(PostureGoal.allCases) { goal in
+                        Toggle(isOn: Binding(
+                            get: { draft.postureGoals.contains(goal) },
+                            set: { on in
+                                if on { draft.postureGoals.insert(goal) } else { draft.postureGoals.remove(goal) }
+                            })) {
+                            Label(goal.label, systemImage: goal.symbol)
+                        }
+                    }
+                } header: {
+                    Text("Holdning du vil forbedre")
+                } footer: {
+                    Text("Valgfritt. Skannet finner også holdningsavvik automatisk.")
                 }
                 SwiftUI.Section("Erfaring") {
                     Picker("Erfaring", selection: $draft.experience) {

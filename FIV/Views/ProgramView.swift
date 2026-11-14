@@ -90,6 +90,16 @@ struct ProgramView: View {
                 }
             }
 
+            if let routine = p.postureRoutine, !routine.isEmpty {
+                Section {
+                    ForEach(routine) { DrillRow(drill: $0) }
+                } header: {
+                    Text("Holdningsrutine · ca. 10 min")
+                } footer: {
+                    Text("Som oppvarming før hver økt, eller daglig hjemme.")
+                }
+            }
+
             Section("Ukentlig volum (harde sett)") {
                 ForEach(Muscle.allCases) { m in
                     let done = p.weeklySets[m.rawValue] ?? 0

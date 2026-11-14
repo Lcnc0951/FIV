@@ -33,6 +33,11 @@ enum ExerciseAnimationStore {
         loaded.map[exerciseId].flatMap { loaded.anims[$0] }
     }
 
+    /// Slår opp direkte på animasjonsnavn (brukes av holdningsøvelser).
+    static func animation(named name: String) -> StickAnimation? {
+        loaded.anims[name]
+    }
+
     private static func load() -> ([String: StickAnimation], [String: String]) {
         guard let url = Bundle.main.url(forResource: "ExerciseAnimations", withExtension: "json"),
               let data = try? Data(contentsOf: url),
