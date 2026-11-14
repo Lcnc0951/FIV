@@ -252,6 +252,12 @@ struct ScanResultView: View {
         }
         .navigationTitle(Text(scan.date, style: .date))
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                // Eksport til nettappen (Kropp → Skann → Importer skann fra iPhone-appen)
+                ShareLink(item: exportJSON, preview: SharePreview("FIV-skann.json")) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Lagre") {
                     scan.measurements = m
@@ -261,6 +267,14 @@ struct ScanResultView: View {
             }
         }
         .onAppear { m = scan.measurements }
+    }
+
+    /// Samme feltnavn som nettappen forventer (ScanMeasurements som JSON).
+    private var exportJSON: String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = (try? encoder.encode(m)) ?? Data()
+        return String(data: data, encoding: .utf8) ?? "{}"
     }
 
     private func row(_ title: String, _ value: Double?, unit: String, format: String) -> some View {

@@ -5,7 +5,11 @@ Status per november 2026. ✅ = ferdig i koden, men ikke kompilert eller testet 
 
 ---
 
-## Fase 0 – Få appen til å kjøre (blokkerende)
+## Nettapp (ingen Mac nødvendig) — ✅ publisert
+
+Nettappen i `web/` har samme PT-motor (TypeScript-port, 18 tester) og skanner med kamera + AI (MediaPipe) og høyden som målestokk. LiDAR-modus ligger klar (Profil → Skannemetode), og skann fra iPhone-appen kan importeres som JSON. Neste steg her: validere kameramålene mot målebånd (som 1.1) og legge til dra-og-juster av målepunkter på bildet.
+
+## Fase 0 – Få iPhone-appen til å kjøre (blokkerende for LiDAR)
 
 | # | Oppgave | Hvem | Status |
 |---|---|---|---|

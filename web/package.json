@@ -1,0 +1,27 @@
+{
+  "name": "fiv-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "gen": "python3 scripts/gen_data.py",
+    "dev": "vite",
+    "build": "npm run gen && tsc --noEmit && vite build",
+    "test": "npm run gen && vitest run",
+    "setup": "mkdir -p public/mediapipe && cp node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.* public/mediapipe/ && curl -sSL -o public/mediapipe/pose_landmarker_full.task https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+    "artifact": "npm run build && python3 scripts/artifact.py"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "1.1.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "typescript": "5.6.3",
+    "vite": "5.4.10",
+    "vitest": "2.1.4"
+  }
+}
