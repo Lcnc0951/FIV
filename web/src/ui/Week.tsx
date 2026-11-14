@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { totalSets, type WorkoutDay } from '../engine/generator'
 import {
   MORNING_TIPS, motivation, music, planWeek, RUN_INFO, runSegments, totalSeconds, weekdayIndex, weekWarnings,
-  WEEKDAYS, WEEKDAYS_SHORT, type DayKind, type DayPlan, type RunType,
+  WEEKDAYS, WEEKDAYS_SHORT, type DayKind, type DayPlan, type RunType, type Segment,
 } from '../engine/week'
 import { uid } from '../engine/types'
+import { effectiveMaxHR } from '../engine/composition'
 import { Card, Icon, Sheet, speak, Tag } from './kit'
 import { useApp } from './state'
 
@@ -200,6 +201,8 @@ export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }
     await logWorkout([{ id: uid(), date: new Date().toISOString(), dayName: RUN_INFO[run].label, exerciseId: `run:${run}`, sets: [] }])
     onClose()
   }
+  const hr = effectiveMaxHR(new Date().getFullYear() - profile.birthYear, profile.watch?.maxHR)
+  const zone = (i: Segment['intensity']) => i === 'hard' ? `${Math.floor(hr * 0.85)}–${Math.floor(hr * 0.95)}` : i === 'moderat' ? `${Math.floor(hr * 0.8)}–${Math.floor(hr * 0.87)}` : `${Math.floor(hr * 0.6)}–${Math.floor(hr * 0.72)}`
   const hardDone = segs.slice(0, idx).filter((s) => s.intensity === 'hard').length
   const hardTotal = segs.filter((s) => s.intensity === 'hard').length
   return (
@@ -208,6 +211,7 @@ export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }
       <div className={`timer i-${finished ? 'done' : seg.intensity}`} aria-live="polite">
         <div className="timer-label">{finished ? 'Ferdig!' : seg.label}</div>
         <div className="timer-clock">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</div>
+        {!finished && <div className="timer-hr">Puls {zone(seg.intensity)}</div>}
         <div className="timer-sub">{finished ? `${Math.round(total / 60)} minutter fullført` : idx + 1 < segs.length ? `Neste: ${segs[idx + 1].label}` : 'Siste del'}</div>
       </div>
       <div className="bar"><div className="bar-fill" style={{ width: `${Math.min(100, (elapsed / total) * 100)}%` }} /></div>

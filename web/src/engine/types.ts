@@ -117,6 +117,18 @@ export interface Profile {
   weekendTraining: boolean
   /** Brukerens egne endringer i ukeplanen, per ukedag (0 = mandag). */
   weekOverrides?: Partial<Record<number, { kind: DayKind; run?: RunType }>>
+  /** Tall fra Apple-klokka / Helse-appen (skrives inn for hånd). */
+  watch?: WatchData
+}
+
+export interface WatchData {
+  maxHR?: number        // høyeste puls du har sett i en hard økt
+  restingHR?: number
+  vo2max?: number       // «Kondisjon» i Helse-appen
+  activeKcal?: number   // snitt aktiv energi per dag
+  steps?: number        // snitt skritt per dag
+  exerciseMin?: number  // snitt treningsminutter per dag
+  updated?: string
 }
 
 /** Fyller inn nye felt for profiler laget i eldre versjoner. */
@@ -144,6 +156,7 @@ export interface ProfileData {
   targetBodyFat?: number
   physique: PhysiqueGoal
   postureGoals: PostureGoal[]
+  watch?: WatchData
 }
 
 /** Samme feltnavn som Swift `ScanMeasurements` (JSON fra iOS-appen kan importeres direkte). */

@@ -120,6 +120,25 @@ export function ProfileForm({ value, onChange, section = 'all', presets, onPrese
             </fieldset>
           )}
           <fieldset>
+            <legend>Fra Apple-klokka (valgfritt)</legend>
+            <p className="hint">Finn tallene i Helse-appen (År-visning). De gjør pulssoner, kalorier og skrittmål personlige.</p>
+            <div className="grid2">
+              {([
+                ['vo2max', 'Kondisjon (VO₂maks)', 0.1],
+                ['maxHR', 'Høyeste puls i hard økt', 1],
+                ['activeKcal', 'Aktiv energi, kcal/dag', 1],
+                ['steps', 'Skritt per dag', 100],
+                ['restingHR', 'Hvilepuls', 1],
+                ['exerciseMin', 'Treningsminutter/dag', 1],
+              ] as const).map(([k, label, step]) => (
+                <label key={k} className="field"><span>{label}</span>
+                  <input id={`watch-${k}`} type="number" inputMode="decimal" step={step} value={value.watch?.[k] ?? ''} placeholder="–"
+                    onChange={(e) => onChange({ ...value, watch: { ...value.watch, [k]: e.target.value === '' ? undefined : +e.target.value, updated: new Date().toISOString() } })} />
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
             <legend>Plager / skader</legend>
             {(Object.keys(LIMITATION_LABEL) as Limitation[]).map((l) => (
               <label key={l} className="check"><input type="checkbox" checked={value.limitations.includes(l)} onChange={(e) => set('limitations', toggle(value.limitations, l, e.target.checked))} />{LIMITATION_LABEL[l]}</label>

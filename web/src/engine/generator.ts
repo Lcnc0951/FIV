@@ -1,6 +1,6 @@
 // Port av ProgramGenerator.swift.
 import type { BodyAnalysis, PostureDrill } from './analyzer'
-import { maxHeartRate } from './composition'
+import { effectiveMaxHR } from './composition'
 import { allExercises, exercise, isCompound, select, tier } from './library'
 import {
   EQUIPMENT_INFO, EXPERIENCE_LABEL, GOAL_INFO, LIMITATION_LABEL, MUSCLE_LABEL, MUSCLES, PHYSIQUE_INFO, uid,
@@ -134,11 +134,17 @@ function modality(l: TrainingLocation): string {
   return 'som bakkeløp, rask gange i motbakke eller trappeløp'
 }
 
+/** Skrittmål: minst PT-ens anbefaling, og ca. 1 000 over snittet ditt (maks 12 000). */
+export function personalSteps(recommended: number, current?: number): number {
+  if (!current) return recommended
+  return Math.min(12000, Math.max(recommended, Math.round((current + 1000) / 500) * 500))
+}
+
 export function cardioPlan(p: ProfileData, a: BodyAnalysis): CardioPlan {
-  const hr = maxHeartRate(p.age)
+  const hr = effectiveMaxHR(p.age, p.watch?.maxHR)
   const [s, m, i, st] = p.goal === 'loseFat' || a.cardioEmphasis === 2 ? [3, 40, 1, 10000] : p.goal === 'health' ? [2, 45, 1, 9000] : p.goal === 'strength' ? [2, 30, 0, 8000] : [2, 30, 1, 8000]
   return {
-    zone2Sessions: s, zone2Minutes: m, intervalSessions: i, dailySteps: st,
+    zone2Sessions: s, zone2Minutes: m, intervalSessions: i, dailySteps: personalSteps(st, p.watch?.steps),
     zone2HR: [Math.floor(hr * 0.6), Math.floor(hr * 0.7)], intervalHR: [Math.floor(hr * 0.85), Math.floor(hr * 0.95)],
     intervalDescription: `4×4 ${modality(p.location)}: 10 min oppvarming, 4 × 4 min på 85–95 % av makspuls med 3 min rolig mellom. Norsk metode (Helgerud/NTNU) — en av de mest effektive måtene å øke VO₂maks på.`,
   }

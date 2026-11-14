@@ -7,14 +7,16 @@ import { kgText, type ProfileData, type ScanMeasurements, type SetLog } from './
 // ---------------- Ernæring ----------------
 
 export interface NutritionTargets {
-  maintenanceKcal: number; targetKcal: number; proteinG: number; fatG: number; carbsG: number; fiberG: number
+  maintenanceKcal: number; fromWatch: boolean; targetKcal: number; proteinG: number; fatG: number; carbsG: number; fiberG: number
   waterLiters: number; note: string; supplements: string[]
 }
 
 export function nutrition(p: ProfileData, bodyFat?: number, overrideKcal?: number): NutritionTargets {
   const w = p.weightKg
   const bmr = bodyFat != null ? 370 + 21.6 * leanMass(w, bodyFat) : 10 * w + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161)
-  const maintenance = bmr * Math.min(1.725, 1.3 + 0.06 * p.daysPerWeek)
+  // Med klokkedata: hvilestoffskifte + 85 % av målt aktiv energi (klokker overestimerer litt) + 10 % for fordøyelse
+  const fromWatch = p.watch?.activeKcal && p.watch.activeKcal > 100 ? (bmr + p.watch.activeKcal * 0.85) * 1.1 : undefined
+  const maintenance = fromWatch ?? bmr * Math.min(1.725, 1.3 + 0.06 * p.daysPerWeek)
   const [factor, note] = ({
     loseFat: [0.8, 'Mål: −0,5 til −1 % av kroppsvekten per uke.'],
     buildMuscle: [p.experience === 'beginner' ? 1.1 : 1.06, 'Mål: +0,25–0,5 % av kroppsvekten per måned (nybegynnere kan gå litt raskere).'],
@@ -28,7 +30,7 @@ export function nutrition(p: ProfileData, bodyFat?: number, overrideKcal?: numbe
   const fat = Math.max(0.7 * w, target * 0.25 / 9)
   const carbs = Math.max(0, (target - protein * 4 - fat * 9) / 4)
   return {
-    maintenanceKcal: Math.round(maintenance), targetKcal: Math.round(target), proteinG: Math.round(protein), fatG: Math.round(fat),
+    maintenanceKcal: Math.round(maintenance), fromWatch: fromWatch != null, targetKcal: Math.round(target), proteinG: Math.round(protein), fatG: Math.round(fat),
     carbsG: Math.round(carbs), fiberG: Math.round(target / 1000 * 14), waterLiters: Math.round(w * 0.35) / 10, note,
     supplements: [
       'Kreatin monohydrat 3–5 g daglig — best dokumenterte tilskudd for styrke og muskelmasse, og lovende for hjernehelse.',

@@ -2,6 +2,7 @@ import { analyzeBody, analyzeMuscles, planPosture } from '../engine/analyzer'
 import { analyzeFat, FAT_CATEGORY_LABEL, DISTRIBUTION_LABEL, nutrition, planFatLoss } from '../engine/coach'
 import type { WorkoutDay } from '../engine/generator'
 import { DAILY_TIPS } from '../data/knowledge'
+import { assessFitness, effectiveMaxHR } from '../engine/composition'
 import { avg, PHYSIQUE_INFO } from '../engine/types'
 import { Card, FindingRow, Icon, Metric, nb, dateNb } from './kit'
 import { TodayCard, type StartSession } from './Week'
@@ -57,6 +58,27 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
         </Card>
       </div>
 
+      {profile.watch?.vo2max ? (() => {
+        const f = assessFitness(profile.watch!.vo2max!, pd.age, pd.sex)
+        const hr = effectiveMaxHR(pd.age, profile.watch?.maxHR)
+        return (
+          <Card>
+            <div className="row between"><h3>Kondisjon</h3><span className="tag tag-good">{f.label}</span></div>
+            <div className="metrics">
+              <Metric label="VO₂maks" value={nb(f.vo2max)} />
+              <Metric label="Kondisjonsalder" value={f.fitnessAge} unit="år" />
+              <Metric label="Mål om 12 uker" value={nb(f.goal12w)} />
+            </div>
+            <p className="small">Du er ca. {f.percentOfAverage} % av medianen for din alder (grovt anslag, klokka har ±3–5 i usikkerhet). Hver +3,5 i VO₂maks er forbundet med ca. 13 % lavere risiko for tidlig død (Kodama 2009).</p>
+            <p className="muted small">Pulssoner med makspuls {hr}: sone 2 {Math.floor(hr * 0.6)}–{Math.floor(hr * 0.7)} · 4×4-drag {Math.floor(hr * 0.85)}–{Math.floor(hr * 0.95)}. Klokka oppdaterer VO₂maks bare fra utendørs løp/gå med GPS — ta minst én tur ute i uka.</p>
+          </Card>
+        )
+      })() : (
+        <Card onClick={() => go('profil')}>
+          <p className="small"><Icon name="heart" size={16} /> <strong>Har du Apple Watch?</strong> Legg inn kondisjon, makspuls, aktiv energi og skritt under Profil, så blir pulssoner og kalorier personlige.</p>
+        </Card>
+      )}
+
       <Card>
         <p className="tip"><Icon name="coach" /> {tip}</p>
       </Card>
@@ -88,7 +110,7 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
           <Metric label="Fett" value={n.fatG} unit="g" />
           <Metric label="Fiber" value={n.fiberG} unit="g" />
         </div>
-        <p className="muted small">{n.note}</p>
+        <p className="muted small">{n.note}{n.fromWatch ? ` Vedlikehold ${n.maintenanceKcal} kcal er regnet ut fra klokkas aktive energi.` : ''}</p>
         <details><summary>Tilskudd</summary><ul className="small">{n.supplements.map((s) => <li key={s}>{s}</li>)}</ul></details>
       </Card>
 
