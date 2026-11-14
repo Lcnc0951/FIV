@@ -81,7 +81,7 @@ struct ScanFlowView: View {
         profile.weightKg = weight
         let scan = BodyScan(weightKg: weight, measurements: m)
         context.insert(scan)
-        CoachService.regenerateProgram(profile: profile, scans: scans + [scan], context: context)
+        CoachService.regenerateAllPrograms(profile: profile, scans: scans + [scan], context: context)
         resultScan = scan
     }
 }
@@ -253,7 +253,7 @@ struct ScanResultView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Lagre") {
                     scan.measurements = m
-                    CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                    CoachService.regenerateAllPrograms(profile: profile, scans: scans, context: context)
                     dismiss()
                 }
             }

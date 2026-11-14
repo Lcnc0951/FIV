@@ -12,7 +12,10 @@ final class UserProfile {
     var experienceRaw: String = Experience.beginner.rawValue
     var daysPerWeek: Int = 3
     var sessionMinutes: Int = 60
-    var equipmentRaw: String = Equipment.fullGym.rawValue
+    var locationsData: Data = Data()
+    var activeLocationId: String = ""
+    /// 0 = automatisk mål.
+    var targetBodyFat: Double = 0
     var limitationsRaw: [String] = []
     var createdAt: Date = Date()
 
@@ -30,9 +33,22 @@ final class UserProfile {
         get { Experience(rawValue: experienceRaw) ?? .beginner }
         set { experienceRaw = newValue.rawValue }
     }
-    var equipment: Equipment {
-        get { Equipment(rawValue: equipmentRaw) ?? .fullGym }
-        set { equipmentRaw = newValue.rawValue }
+    var locations: [TrainingLocation] {
+        get {
+            let decoded = (try? JSONDecoder().decode([TrainingLocation].self, from: locationsData)) ?? []
+            return decoded.isEmpty ? [TrainingLocation.gym(id: TrainingLocation.defaultId)] : decoded
+        }
+        set { locationsData = (try? JSONEncoder().encode(newValue)) ?? Data() }
+    }
+
+    var activeLocation: TrainingLocation {
+        get { locations.first { $0.id.uuidString == activeLocationId } ?? locations[0] }
+        set {
+            var all = locations
+            if let i = all.firstIndex(where: { $0.id == newValue.id }) { all[i] = newValue } else { all.append(newValue) }
+            locations = all
+            activeLocationId = newValue.id.uuidString
+        }
     }
     var limitations: Set<Limitation> {
         get { Set(limitationsRaw.compactMap(Limitation.init(rawValue:))) }
@@ -43,10 +59,13 @@ final class UserProfile {
         Calendar.current.component(.year, from: Date()) - birthYear
     }
 
-    var data: ProfileData {
+    var data: ProfileData { data(at: activeLocation) }
+
+    func data(at location: TrainingLocation) -> ProfileData {
         ProfileData(sex: sex, age: age, heightCm: heightCm, weightKg: weightKg,
                     goal: goal, experience: experience, daysPerWeek: daysPerWeek,
-                    sessionMinutes: sessionMinutes, equipment: equipment, limitations: limitations)
+                    sessionMinutes: sessionMinutes, location: location, limitations: limitations,
+                    targetBodyFat: targetBodyFat > 0 ? targetBodyFat : nil)
     }
 }
 

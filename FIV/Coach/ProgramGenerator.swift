@@ -42,6 +42,8 @@ struct CardioPlan: Codable, Hashable {
 
 struct TrainingProgram: Codable, Hashable {
     var createdAt: Date
+    var locationId: UUID
+    var locationName: String
     var title: String
     var summary: String
     var days: [WorkoutDay]
@@ -70,8 +72,16 @@ enum ProgramGenerator {
 
     static func generate(profile: ProfileData, analysis: BodyAnalysis, now: Date = Date()) -> TrainingProgram {
         let templates = split(for: profile.daysPerWeek)
-        let target = weeklyTargets(profile: profile, analysis: analysis)
+        let fullTarget = weeklyTargets(profile: profile, analysis: analysis)
         let maxSetsPerSession = max(10, Int(Double(profile.sessionMinutes - 8) / 2.8))
+        // Får ikke alt plass i ukas økter? Skaler målene ned jevnt, så ingen muskel blir glemt.
+        var target = fullTarget
+        let budget = Double(maxSetsPerSession * templates.count)
+        let estimate = fullTarget.values.reduce(0, +) * 0.8
+        if estimate > budget {
+            let f = max(0.5, budget / estimate)
+            target = fullTarget.mapValues { max(2, ($0 * f).rounded()) }
+        }
 
         // 1) Velg øvelser
         var occurrences: [MovementPattern: Int] = [:]
@@ -100,7 +110,8 @@ enum ProgramGenerator {
                 let candidates = days.indices.flatMap { d in
                     days[d].exercises.indices.compactMap { e -> (Int, Int)? in
                         let p = days[d].exercises[e]
-                        guard p.exercise?.primary == muscle, p.sets < 5, days[d].totalSets < maxSetsPerSession else { return nil }
+                        let maxSets = p.exercise?.pattern.isCompound == true ? 5 : 4
+                        guard p.exercise?.primary == muscle, p.sets < maxSets, days[d].totalSets < maxSetsPerSession else { return nil }
                         return (d, e)
                     }
                 }.sorted { days[$0.0].totalSets < days[$1.0].totalSets }
@@ -147,18 +158,22 @@ enum ProgramGenerator {
         }
 
         let finalVolume = weeklyVolume(days)
-        let coverage = Muscle.allCases.map { min(1, finalVolume[$0, default: 0] / max(target[$0, default: 1], 1)) }.reduce(0, +) / Double(Muscle.allCases.count)
+        let coverage = Muscle.allCases.map { min(1, finalVolume[$0, default: 0] / max(fullTarget[$0, default: 1], 1)) }.reduce(0, +) / Double(Muscle.allCases.count)
         return TrainingProgram(
             createdAt: now,
+            locationId: profile.location.id,
+            locationName: profile.location.name,
             title: title(profile: profile),
             summary: summary(profile: profile, analysis: analysis),
             days: days,
             weeklySets: Dictionary(uniqueKeysWithValues: finalVolume.map { ($0.key.rawValue, $0.value) }),
-            targetSets: Dictionary(uniqueKeysWithValues: target.map { ($0.key.rawValue, $0.value) }),
+            targetSets: Dictionary(uniqueKeysWithValues: fullTarget.map { ($0.key.rawValue, $0.value) }),
             mesocycle: mesocycle(for: profile.experience),
             cardio: cardioPlan(profile: profile, analysis: analysis),
             warmup: warmup(analysis: analysis),
             focusNotes: focusNotes(profile: profile, analysis: analysis)
+                + (days.flatMap(\.exercises).contains { $0.exercise?.pattern == .verticalPull } ? [] :
+                    ["PT-tips: En pull-up-stang i døra (ca. 300–500 kr) gir deg pull-ups og chin-ups — den beste øvelsen for rygg-bredde. Legg den til under Utstyr når du har den."])
                 + (coverage < 0.8 ? ["Med \(profile.daysPerWeek) økter à \(profile.sessionMinutes) min når vi bare ~\(Int(coverage * 100)) % av ideelt ukevolum. En ekstra økt eller lengre økter gir raskere fremgang — men dette programmet virker også."] : []))
     }
 
@@ -283,9 +298,21 @@ enum ProgramGenerator {
         if pattern == .carry || (pattern == .core && !analysis.postureFlags.isDisjoint(with: [.shoulderTilt, .hipTilt])) {
             wantsUnilateral = true
         }
-        return ExerciseLibrary.select(pattern: pattern, equipment: profile.equipment, limitations: profile.limitations,
+        // Med lette vekter: ettbeins-/ettarmsvarianter dobler den relative belastningen.
+        if lightLoadsOnly(profile) && ([.squat, .hinge, .singleLeg, .horizontalPush] as [MovementPattern]).contains(pattern) {
+            wantsUnilateral = true
+        }
+        return ExerciseLibrary.select(pattern: pattern, available: profile.location.equipment, limitations: profile.limitations,
                                       preferPrimary: prefer, preferUnilateral: wantsUnilateral,
                                       occurrence: occurrence, exclude: exclude)
+    }
+
+    /// Ingen stang/maskiner og manualer under ~30 % av kroppsvekten.
+    static func lightLoadsOnly(_ profile: ProfileData) -> Bool {
+        let loc = profile.location
+        if loc.equipment.contains(where: \.isHeavyEquipment) { return false }
+        let heaviest = max(loc.maxDumbbell ?? 0, loc.equipment.contains(.kettlebell) ? (loc.kettlebellWeights.max() ?? 0) : 0)
+        return heaviest < profile.weightKg * 0.3
     }
 
     // MARK: Reps, RIR, pause
@@ -303,10 +330,17 @@ enum ProgramGenerator {
         if ex.pattern == .carry { (lo, hi) = (30, 45) } // sekunder per side
         if ex.pattern == .core { (lo, hi) = (8, 15) }
 
-        let rir: Int = switch profile.experience {
+        var rir: Int = switch profile.experience {
         case .beginner: compound ? 3 : 2
         case .intermediate: compound ? 2 : 1
         case .advanced: compound ? 1 : 0
+        }
+        // Lette vekter bygger like mye muskler som tunge når settene tas nær failure (Schoenfeld 2017, Lasevicius 2018).
+        let light = ex.tier < 2 && lightLoadsOnly(profile) && ex.pattern != .core && ex.pattern != .carry
+            && ex.requires.isDisjoint(with: [.pullUpBar, .dipBars]) // kroppsvekt-drag er allerede tungt
+        if light {
+            (lo, hi) = compound ? (12, 20) : (15, 25)
+            rir = max(0, rir - 1)
         }
         // Lengre pauser gir mer vekst og styrke (Schoenfeld 2016; Singer 2024)
         let rest = compound ? (profile.goal == .strength ? 180 : 150) : 90
@@ -319,6 +353,7 @@ enum ProgramGenerator {
             notes.append("Siste sett: fortsett med delvise reps i strukket posisjon etter failure.")
         }
         if ex.pattern == .carry { notes.append("Sekunder per side.") }
+        if light { notes.append("Lette vekter: flere reps og helt nær failure gir samme effekt. Bruk 3–4 sek nedfase.") }
         return ExercisePrescription(exerciseId: ex.id, sets: sets, repsMin: lo, repsMax: hi, rir: rir, restSeconds: rest,
                                     note: notes.isEmpty ? nil : notes.joined(separator: " "))
     }
@@ -361,7 +396,15 @@ enum ProgramGenerator {
             zone2SessionsPerWeek: sessions, zone2Minutes: minutes,
             intervalSessionsPerWeek: intervals, dailySteps: steps,
             zone2HeartRate: z2, intervalHeartRate: hi,
-            intervalDescription: "4×4: 10 min oppvarming, 4 × 4 min på 85–95 % av makspuls med 3 min rolig mellom. Norsk metode (Helgerud/NTNU) — en av de mest effektive måtene å øke VO₂maks på.")
+            intervalDescription: "4×4 \(cardioModality(profile.location)): 10 min oppvarming, 4 × 4 min på 85–95 % av makspuls med 3 min rolig mellom. Norsk metode (Helgerud/NTNU) — en av de mest effektive måtene å øke VO₂maks på.")
+    }
+
+    private static func cardioModality(_ location: TrainingLocation) -> String {
+        if location.equipment.contains(.treadmill) { return "på tredemølle med 5–8 % stigning" }
+        if location.equipment.contains(.rower) { return "på romaskin" }
+        if location.equipment.contains(.bike) { return "på sykkel" }
+        if location.equipment.contains(.kettlebell) { return "som bakkeløp ute eller kettlebell swings" }
+        return "som bakkeløp, rask gange i motbakke eller trappeløp"
     }
 
     // MARK: Tekst
@@ -386,7 +429,7 @@ enum ProgramGenerator {
 
     private static func summary(profile: ProfileData, analysis: BodyAnalysis) -> String {
         let prioritized = analysis.priorities.filter { $0.value > 1.05 }.sorted { $0.value > $1.value }.prefix(3).map { $0.key.label.lowercased() }
-        var s = "Laget for \(profile.experience.label.lowercased()) med \(profile.equipment.label.lowercased())."
+        var s = "Laget for \(profile.experience.label.lowercased()) · \(profile.location.name) (\(profile.location.summary.lowercased()))."
         if !prioritized.isEmpty { s += " Ekstra fokus: \(prioritized.joined(separator: ", "))." }
         if !analysis.unilateralFocus.isEmpty { s += " Ettsidige øvelser for å rette opp ubalanser." }
         return s

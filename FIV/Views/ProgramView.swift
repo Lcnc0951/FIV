@@ -7,29 +7,68 @@ struct ProgramView: View {
     @Query(sort: \SavedProgram.createdAt, order: .reverse) private var programs: [SavedProgram]
     @Query(sort: \BodyScan.date, order: .reverse) private var scans: [BodyScan]
 
-    private var program: TrainingProgram? { programs.first?.program }
+    private var saved: SavedProgram? { CoachService.saved(for: profile.activeLocation, in: programs) }
 
     var body: some View {
         NavigationStack {
             Group {
-                if let program {
-                    content(program)
+                if let saved, let program = saved.program {
+                    content(program, saved: saved)
                 } else {
-                    ContentUnavailableView("Ingen program ennå", systemImage: "list.bullet.clipboard",
-                                           description: Text("Trykk «Lag nytt» for å generere et program."))
+                    ContentUnavailableView {
+                        Label("Ingen program for \(profile.activeLocation.name)", systemImage: "list.bullet.clipboard")
+                    } actions: {
+                        Button("Lag program") {
+                            CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                 }
             }
             .navigationTitle("Treningsprogram")
             .toolbar {
-                Button("Lag nytt") {
-                    CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        EquipmentSetupView(profile: profile)
+                    } label: {
+                        Image(systemName: "dumbbell")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Lag nytt") {
+                        CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                    }
                 }
             }
         }
     }
 
-    private func content(_ p: TrainingProgram) -> some View {
+    private var locationPicker: some View {
+        Picker("Treningssted", selection: Binding(
+            get: { profile.activeLocation.id },
+            set: { id in
+                profile.activeLocationId = id.uuidString
+                if CoachService.saved(for: profile.activeLocation, in: programs) == nil {
+                    CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                }
+            })) {
+            ForEach(profile.locations) { loc in
+                Label(loc.name, systemImage: loc.kind.symbol).tag(loc.id)
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private func content(_ p: TrainingProgram, saved: SavedProgram) -> some View {
         List {
+            if profile.locations.count > 1 {
+                Section {
+                    locationPicker
+                } footer: {
+                    Text(profile.activeLocation.summary)
+                }
+            }
+
             Section {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(p.title).font(.headline)
@@ -41,7 +80,7 @@ struct ProgramView: View {
             Section("Økter") {
                 ForEach(p.days) { day in
                     NavigationLink {
-                        DayDetailView(day: day, warmup: p.warmup)
+                        DayDetailView(day: day, warmup: p.warmup, saved: saved, profile: profile)
                     } label: {
                         VStack(alignment: .leading) {
                             Text(day.name).font(.headline)
@@ -98,38 +137,86 @@ struct ProgramView: View {
 struct DayDetailView: View {
     let day: WorkoutDay
     let warmup: [String]
+    var saved: SavedProgram? = nil
+    var profile: UserProfile? = nil
+    @Environment(\.modelContext) private var context
+    @Query private var scans: [BodyScan]
+
+    /// Leser oppdatert dag fra lagret program (etter bytte av øvelse).
+    private var current: WorkoutDay {
+        saved?.program?.days.first { $0.id == day.id } ?? day
+    }
 
     var body: some View {
         List {
             Section("Oppvarming") {
                 ForEach(warmup, id: \.self) { Text($0).font(.subheadline) }
             }
-            Section("Øvelser") {
-                ForEach(day.exercises) { p in
+            Section {
+                ForEach(current.exercises) { p in
                     if let ex = p.exercise {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text(ex.name).font(.headline)
-                                if ex.unilateral { Tag("ettsidig") }
-                                if ex.lengthenedBias { Tag("strekk") }
-                            }
-                            Text("\(p.sets) × \(p.repsMin)–\(p.repsMax) · RIR \(p.rir) · pause \(p.restSeconds / 60):\(String(format: "%02d", p.restSeconds % 60))")
-                                .font(.subheadline.monospacedDigit())
-                            Text(ex.cue).font(.caption).foregroundStyle(.secondary)
-                            if let note = p.note {
-                                Text(note).font(.caption.bold()).foregroundStyle(.orange)
-                            }
+                        NavigationLink {
+                            ExerciseDetailView(exercise: ex, prescription: p, location: profile?.activeLocation,
+                                               limitations: profile?.limitations ?? [],
+                                               onSwap: swapHandler(for: p))
+                        } label: {
+                            ExerciseRow(exercise: ex, prescription: p)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
+            } header: {
+                Text("Øvelser")
+            } footer: {
+                Text("Trykk på en øvelse for å se hvordan den gjøres, eller bytte den ut.")
             }
             Section {
-                NavigationLink("Start økta") { WorkoutLogView(day: day) }
-                    .font(.headline)
+                NavigationLink("Start økta") {
+                    WorkoutLogView(day: current, dumbbellWeights: profile?.activeLocation.dumbbellWeights ?? [])
+                }
+                .font(.headline)
             }
         }
         .navigationTitle(day.name)
+    }
+
+    private func swapHandler(for p: ExercisePrescription) -> ((Exercise) -> Void)? {
+        guard let saved, let profile else { return nil }
+        return { newExercise in
+            CoachService.swap(prescriptionId: p.id, to: newExercise, in: saved, profile: profile, scans: scans, context: context)
+        }
+    }
+}
+
+struct ExerciseRow: View {
+    let exercise: Exercise
+    let prescription: ExercisePrescription
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Group {
+                if let anim = ExerciseAnimationStore.animation(for: exercise.id) {
+                    StickFigureView(animation: anim, highlight: exercise.primary, showsPhase: false)
+                        .padding(4)
+                } else {
+                    Image(systemName: "figure.strengthtraining.traditional").foregroundStyle(.orange)
+                }
+            }
+            .frame(width: 64, height: 64)
+            .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(exercise.name).font(.headline)
+                    if exercise.unilateral { Tag("ettsidig") }
+                }
+                Text("\(prescription.sets) × \(prescription.repsMin)–\(prescription.repsMax) · RIR \(prescription.rir) · pause \(prescription.restSeconds / 60):\(String(format: "%02d", prescription.restSeconds % 60))")
+                    .font(.subheadline.monospacedDigit())
+                if let note = prescription.note {
+                    Text(note).font(.caption.bold()).foregroundStyle(.orange).lineLimit(2)
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

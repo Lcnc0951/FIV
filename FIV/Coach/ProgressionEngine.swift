@@ -16,7 +16,32 @@ struct ProgressionSuggestion: Equatable {
 /// Dobbel progresjon: øk reps innenfor intervallet, deretter vekt.
 enum ProgressionEngine {
 
-    static func suggest(for p: ExercisePrescription, lastSets: [SetLog]) -> ProgressionSuggestion {
+    /// `dumbbellWeights`: manualvektene som faktisk finnes der du trener. Forslag rundes til nærmeste tilgjengelige vekt.
+    static func suggest(for p: ExercisePrescription, lastSets: [SetLog], dumbbellWeights: [Double] = []) -> ProgressionSuggestion {
+        var s = baseSuggestion(for: p, lastSets: lastSets)
+        guard let ex = p.exercise, ex.usesDumbbells, !dumbbellWeights.isEmpty, let wanted = s.weightKg, wanted > 0 else { return s }
+        let sorted = dumbbellWeights.sorted()
+        let top = lastSets.map(\.weightKg).max() ?? 0
+        if wanted > top {
+            // Neste vekt opp som faktisk finnes
+            if let next = sorted.first(where: { $0 > top }) {
+                s.weightKg = next
+                if next - top > top * 0.15 {
+                    s.message = "Neste manual (\(next.kgText)) er et stort hopp — start på \(max(p.repsMin - 3, 5)) reps og bygg opp."
+                    s.targetReps = max(p.repsMin - 3, 5)
+                }
+            } else {
+                s.weightKg = top
+                s.targetReps = p.repsMax + 2
+                s.message = "Du har nådd tyngste manual. Øk reps, bruk 3–4 sek nedfase, pause i bunnen eller en ettsidig variant."
+            }
+        } else {
+            s.weightKg = sorted.min(by: { abs($0 - wanted) < abs($1 - wanted) })
+        }
+        return s
+    }
+
+    private static func baseSuggestion(for p: ExercisePrescription, lastSets: [SetLog]) -> ProgressionSuggestion {
         guard let ex = p.exercise else {
             return ProgressionSuggestion(weightKg: nil, targetReps: p.repsMin, message: "")
         }

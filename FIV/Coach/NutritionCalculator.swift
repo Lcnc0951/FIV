@@ -14,7 +14,8 @@ struct NutritionTargets: Equatable {
 
 enum NutritionCalculator {
 
-    static func targets(profile: ProfileData, bodyFatPercent: Double?) -> NutritionTargets {
+    /// `overrideKcal`: brukes når fettap-planen har regnet ut et eget kalorimål.
+    static func targets(profile: ProfileData, bodyFatPercent: Double?, overrideKcal: Int? = nil) -> NutritionTargets {
         let w = profile.weightKg
         // Hvilestoffskifte: Katch-McArdle hvis fettprosent er kjent, ellers Mifflin-St Jeor.
         let bmr: Double
@@ -34,7 +35,7 @@ enum NutritionCalculator {
         case .strength: (1.05, "Lite overskudd gir best styrkeutvikling.")
         case .health: (1.0, "Hold vekten stabil, fokuser på kvalitet og protein.")
         }
-        let target = maintenance * factor
+        let target = overrideKcal.map { Double($0) } ?? maintenance * factor
 
         // Protein: 1,6 g/kg dekker ~95 % av effekten (Morton 2018); høyere i underskudd for å bevare muskelmasse.
         let proteinPerKg: Double = switch profile.goal {

@@ -9,7 +9,9 @@ struct DashboardView: View {
     @State private var showProfile = false
 
     private var analysis: BodyAnalysis { CoachService.analysis(profile: profile, scans: scans) }
-    private var program: TrainingProgram? { programs.first?.program }
+    private var program: TrainingProgram? { CoachService.currentProgram(profile: profile, programs: programs) }
+    private var fat: FatAnalysis { FatLossPlanner.analyze(profile: profile.data, scan: scans.first?.measurements) }
+    private var fatPlan: FatLossPlan { FatLossPlanner.plan(profile: profile.data, analysis: fat, waistCm: scans.first?.measurements.waistCm) }
 
     var body: some View {
         NavigationStack {
@@ -19,6 +21,7 @@ struct DashboardView: View {
                     if let day = nextWorkout {
                         nextWorkoutCard(day)
                     }
+                    fatCard
                     if let scan = scans.first {
                         bodyCard(scan)
                     }
@@ -51,12 +54,12 @@ struct DashboardView: View {
 
     private func nextWorkoutCard(_ day: WorkoutDay) -> some View {
         NavigationLink {
-            WorkoutLogView(day: day)
+            WorkoutLogView(day: day, dumbbellWeights: profile.activeLocation.dumbbellWeights)
         } label: {
             Card {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("NESTE ØKT").font(.caption.bold()).foregroundStyle(.orange)
+                        Text("NESTE ØKT · \(profile.activeLocation.name.uppercased())").font(.caption.bold()).foregroundStyle(.orange)
                         Text(day.name).font(.title2.bold())
                         Text("\(day.exercises.count) øvelser · \(day.totalSets) sett · \(day.focus)")
                             .font(.subheadline).foregroundStyle(.secondary)
@@ -70,6 +73,36 @@ struct DashboardView: View {
     }
 
     // MARK: Kort
+
+    private var fatCard: some View {
+        NavigationLink {
+            FatAnalysisView(profile: profile)
+        } label: {
+            Card {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Fett & plan").font(.headline)
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(.secondary)
+                    }
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(String(format: "%.0f %%", fat.bodyFatPercent)).font(.title.bold())
+                        Text(fat.category.label).foregroundStyle(.secondary)
+                        Spacer()
+                        if fatPlan.needed {
+                            VStack(alignment: .trailing) {
+                                Text(String(format: "−%.1f kg fett", fatPlan.fatToLoseKg)).font(.subheadline.bold())
+                                Text("ca. \(fatPlan.weeks) uker").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    FatScale(position: fat.scalePosition)
+                    Text(fat.distribution.label).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
 
     private var tipCard: some View {
         Card {
@@ -111,7 +144,9 @@ struct DashboardView: View {
     }
 
     private var nutritionCard: some View {
-        let n = NutritionCalculator.targets(profile: profile.data, bodyFatPercent: analysis.bodyFatPercent)
+        let plan = fatPlan
+        let n = NutritionCalculator.targets(profile: profile.data, bodyFatPercent: fat.bodyFatPercent,
+                                            overrideKcal: profile.goal == .loseFat && plan.needed ? plan.targetKcal : nil)
         return Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {

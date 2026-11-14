@@ -1,8 +1,10 @@
+import UIKit
 import SwiftData
 import SwiftUI
 
 struct WorkoutLogView: View {
     let day: WorkoutDay
+    var dumbbellWeights: [Double] = []
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \WorkoutEntry.date, order: .reverse) private var history: [WorkoutEntry]
@@ -25,7 +27,7 @@ struct WorkoutLogView: View {
             ForEach(day.exercises) { p in
                 if let ex = p.exercise {
                     Section {
-                        let suggestion = ProgressionEngine.suggest(for: p, lastSets: lastSets(for: ex.id))
+                        let suggestion = ProgressionEngine.suggest(for: p, lastSets: lastSets(for: ex.id), dumbbellWeights: dumbbellWeights)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Mål: \(p.sets) × \(p.repsMin)–\(p.repsMax) · RIR \(p.rir)").font(.subheadline)
                             if let w = suggestion.weightKg, w > 0 {
@@ -46,6 +48,12 @@ struct WorkoutLogView: View {
                         HStack {
                             Text(ex.name)
                             if ex.unilateral { Tag("ettsidig") }
+                            Spacer()
+                            NavigationLink {
+                                ExerciseDetailView(exercise: ex, prescription: p)
+                            } label: {
+                                Label("Vis", systemImage: "play.circle.fill").font(.caption.bold())
+                            }
                         }
                     }
                 }
@@ -89,6 +97,7 @@ struct WorkoutLogView: View {
             context.insert(WorkoutEntry(date: now, dayName: day.name, exerciseId: p.exerciseId, sets: sets))
         }
         try? context.save()
+        WorkoutHaptics.success()
         VoiceCoach.shared.speak("Bra jobba! Økta er lagret.", interrupt: true)
         dismiss()
     }
@@ -116,5 +125,11 @@ private struct SetRow: View {
 extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
+    }
+}
+
+enum WorkoutHaptics {
+    static func success() {
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
 }

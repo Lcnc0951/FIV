@@ -54,7 +54,7 @@ struct OnboardingView: View {
         let profile = UserProfile()
         draft.apply(to: profile)
         context.insert(profile)
-        CoachService.regenerateProgram(profile: profile, scans: [], context: context)
+        CoachService.regenerateAllPrograms(profile: profile, scans: [], context: context)
     }
 }
 
@@ -68,8 +68,9 @@ struct ProfileDraft {
     var experience: Experience = .beginner
     var daysPerWeek = 3
     var sessionMinutes = 60
-    var equipment: Equipment = .fullGym
     var limitations: Set<Limitation> = []
+    /// Brukes bare ved oppstart — senere redigeres steder i «Utstyr & steder».
+    var locationPresets: Set<LocationPreset> = [.gym]
 
     init() {}
 
@@ -77,13 +78,41 @@ struct ProfileDraft {
         name = profile.name; sex = profile.sex; birthYear = profile.birthYear
         heightCm = profile.heightCm; weightKg = profile.weightKg; goal = profile.goal
         experience = profile.experience; daysPerWeek = profile.daysPerWeek
-        sessionMinutes = profile.sessionMinutes; equipment = profile.equipment; limitations = profile.limitations
+        sessionMinutes = profile.sessionMinutes; limitations = profile.limitations
+        locationPresets = []
     }
 
     func apply(to p: UserProfile) {
         p.name = name; p.sex = sex; p.birthYear = birthYear; p.heightCm = heightCm; p.weightKg = weightKg
         p.goal = goal; p.experience = experience; p.daysPerWeek = daysPerWeek
-        p.sessionMinutes = sessionMinutes; p.equipment = equipment; p.limitations = limitations
+        p.sessionMinutes = sessionMinutes; p.limitations = limitations
+        if !locationPresets.isEmpty {
+            let locs = LocationPreset.allCases.filter(locationPresets.contains).map { $0.make() }
+            p.locations = locs
+            p.activeLocationId = locs.first?.id.uuidString ?? ""
+        }
+    }
+}
+
+enum LocationPreset: String, CaseIterable, Identifiable {
+    case gym, homeGym, homeDumbbells, bodyweight
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .gym: "Treningssenter"
+        case .homeGym: "Hjemmegym (stang, stativ, benk)"
+        case .homeDumbbells: "Hjemme med manualer"
+        case .bodyweight: "Hjemme uten utstyr"
+        }
+    }
+    var symbol: String { self == .gym ? "building.2.fill" : "house.fill" }
+    func make() -> TrainingLocation {
+        switch self {
+        case .gym: .gym()
+        case .homeGym: .homeGym()
+        case .homeDumbbells: .homeDumbbells()
+        case .bodyweight: .bodyweight()
+        }
     }
 }
 
@@ -91,6 +120,8 @@ struct ProfileForm: View {
     enum Section { case body, goal, training, all }
     @Binding var draft: ProfileDraft
     var section: Section = .all
+    /// Satt når skjemaet brukes til redigering — viser lenke til utstyrsoppsett.
+    var profile: UserProfile? = nil
 
     private var currentYear: Int { Calendar.current.component(.year, from: Date()) }
 
@@ -138,8 +169,31 @@ struct ProfileForm: View {
                 SwiftUI.Section("Treningshverdag") {
                     Stepper("\(draft.daysPerWeek) økter per uke", value: $draft.daysPerWeek, in: 2...6)
                     Stepper("\(draft.sessionMinutes) min per økt", value: $draft.sessionMinutes, in: 30...120, step: 5)
-                    Picker("Utstyr", selection: $draft.equipment) {
-                        ForEach(Equipment.allCases) { Text($0.label).tag($0) }
+                }
+                if let profile {
+                    SwiftUI.Section("Utstyr") {
+                        NavigationLink {
+                            EquipmentSetupView(profile: profile)
+                        } label: {
+                            Label("Utstyr, vekter & treningssteder", systemImage: "dumbbell.fill")
+                        }
+                    }
+                } else {
+                    SwiftUI.Section {
+                        ForEach(LocationPreset.allCases) { preset in
+                            Toggle(isOn: Binding(
+                                get: { draft.locationPresets.contains(preset) },
+                                set: { on in
+                                    if on { draft.locationPresets.insert(preset) }
+                                    else if draft.locationPresets.count > 1 { draft.locationPresets.remove(preset) }
+                                })) {
+                                Label(preset.label, systemImage: preset.symbol)
+                            }
+                        }
+                    } header: {
+                        Text("Hvor trener du?")
+                    } footer: {
+                        Text("Velg ett eller flere. Du får et eget program for hvert sted, og kan legge inn nøyaktig hvilke apparater og manualvekter du har under Profil → Utstyr.")
                     }
                 }
                 SwiftUI.Section {

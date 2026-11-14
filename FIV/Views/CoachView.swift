@@ -70,14 +70,14 @@ struct ProfileEditView: View {
 
     var body: some View {
         NavigationStack {
-            ProfileForm(draft: $draft)
+            ProfileForm(draft: $draft, profile: profile)
                 .navigationTitle("Profil")
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Avbryt") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Lagre") {
                             draft.apply(to: profile)
-                            CoachService.regenerateProgram(profile: profile, scans: scans, context: context)
+                            CoachService.regenerateAllPrograms(profile: profile, scans: scans, context: context)
                             dismiss()
                         }
                     }

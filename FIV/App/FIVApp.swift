@@ -52,11 +52,58 @@ enum CoachService {
                                     previous: sorted.dropFirst().first?.measurements)
     }
 
+    /// Nyeste program for et treningssted.
+    static func saved(for location: TrainingLocation, in programs: [SavedProgram]) -> SavedProgram? {
+        programs.sorted { $0.createdAt > $1.createdAt }.first { $0.program?.locationId == location.id }
+    }
+
+    static func currentProgram(profile: UserProfile, programs: [SavedProgram]) -> TrainingProgram? {
+        saved(for: profile.activeLocation, in: programs)?.program
+    }
+
+    /// Lager nytt program for det aktive stedet.
     @discardableResult
     static func regenerateProgram(profile: UserProfile, scans: [BodyScan], context: ModelContext) -> TrainingProgram {
-        let program = ProgramGenerator.generate(profile: profile.data, analysis: analysis(profile: profile, scans: scans))
+        regenerate(profile: profile, location: profile.activeLocation, scans: scans, context: context)
+    }
+
+    /// Lager nye program for alle treningssteder (etter skann, profil- eller utstyrsendring).
+    static func regenerateAllPrograms(profile: UserProfile, scans: [BodyScan], context: ModelContext) {
+        for location in profile.locations {
+            regenerate(profile: profile, location: location, scans: scans, context: context)
+        }
+    }
+
+    @discardableResult
+    private static func regenerate(profile: UserProfile, location: TrainingLocation, scans: [BodyScan], context: ModelContext) -> TrainingProgram {
+        let data = profile.data(at: location)
+        let sorted = scans.sorted { $0.date > $1.date }
+        let analysis = BodyAnalyzer.analyze(profile: data, scan: sorted.first?.measurements, previous: sorted.dropFirst().first?.measurements)
+        let program = ProgramGenerator.generate(profile: data, analysis: analysis)
+        // Rydd bort gamle program for samme sted
+        if let old = try? context.fetch(FetchDescriptor<SavedProgram>()) {
+            for p in old where p.program?.locationId == location.id { context.delete(p) }
+        }
         context.insert(SavedProgram(program: program))
         try? context.save()
         return program
+    }
+
+    /// Bytter én øvelse i et lagret program og tilpasser reps/RIR til den nye øvelsen.
+    static func swap(prescriptionId: UUID, to exercise: Exercise, in saved: SavedProgram,
+                     profile: UserProfile, scans: [BodyScan], context: ModelContext) {
+        guard var program = saved.program else { return }
+        let bodyAnalysis = Self.analysis(profile: profile, scans: scans)
+        let location = profile.locations.first { $0.id == program.locationId } ?? profile.activeLocation
+        for d in program.days.indices {
+            if let e = program.days[d].exercises.firstIndex(where: { $0.id == prescriptionId }) {
+                let old = program.days[d].exercises[e]
+                var new = ProgramGenerator.prescription(for: exercise, sets: old.sets, profile: profile.data(at: location), analysis: bodyAnalysis)
+                new.id = old.id
+                program.days[d].exercises[e] = new
+            }
+        }
+        saved.programData = (try? JSONEncoder().encode(program)) ?? saved.programData
+        try? context.save()
     }
 }

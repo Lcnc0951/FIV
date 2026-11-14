@@ -1,0 +1,281 @@
+{
+  "_doc": "Vinkler i grader. Lemmer (thigh/shin/foot/upper/fore): 0 = rett ned, +90 = fremover, -90 = bakover, 180 = rett opp. trunk: 0 = rett opp, + = lener fremover. L = nærmeste side, R = fjerneste. 'a' = strukket/start, 'b' = sammentrukket. Anchor: ground | hip(x,y) | hands(y) | ankleL(x,y).",
+  "animations": {
+    "squat_bar": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "barbell"}],
+      "base": {"upper": -45, "fore": 150},
+      "a": {"trunk": 40, "thigh": 85, "shin": -35},
+      "b": {"trunk": 3, "thigh": 0, "shin": 0}
+    },
+    "goblet_squat": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "base": {"upper": 15, "fore": 165},
+      "a": {"trunk": 25, "thigh": 90, "shin": -35},
+      "b": {"trunk": 2}
+    },
+    "bodyweight_squat": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"upper": 90, "fore": 90},
+      "a": {"trunk": 30, "thigh": 90, "shin": -35},
+      "b": {"trunk": 2}
+    },
+    "leg_press": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.45},
+      "props": [{"type": "line", "x1": 0.08, "y1": 0.38, "x2": -0.45, "y2": 0.86}, {"type": "plateAtFeet"}],
+      "base": {"trunk": -50, "upper": 30, "fore": 60, "foot": 165},
+      "a": {"thigh": 150, "shin": 75},
+      "b": {"thigh": 120, "shin": 115}
+    },
+    "rdl": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "barbell"}],
+      "a": {"trunk": 75, "thigh": 15, "shin": -12},
+      "b": {"trunk": 0}
+    },
+    "sl_rdl": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "a": {"trunk": 80, "thighL": 10, "shinL": -10, "thighR": -95, "shinR": -95, "footR": -10},
+      "b": {"trunk": 0, "thighR": -5, "shinR": -40}
+    },
+    "kb_swing": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "kettlebell"}],
+      "tempo": [0.5, 0.6],
+      "a": {"trunk": 70, "thigh": 20, "shin": -12, "upper": -25, "fore": -25},
+      "b": {"trunk": 0, "upper": 95, "fore": 95}
+    },
+    "hip_thrust": {
+      "view": "side", "anchor": {"type": "ground"},
+      "props": [{"type": "bench", "x1": -1.15, "x2": -0.38, "y": 0.42}, {"type": "barbell"}],
+      "base": {"upper": 80, "fore": 120},
+      "a": {"trunk": -60, "thigh": 115, "shin": 5},
+      "b": {"trunk": -95, "thigh": 90, "shin": 0}
+    },
+    "glute_bridge": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"upper": 75, "fore": 75},
+      "a": {"trunk": -95, "thighL": 125, "shinL": 0, "thighR": 125, "shinR": 125},
+      "b": {"trunk": -115, "thighL": 95, "shinL": 0, "thighR": 105, "shinR": 105}
+    },
+    "lunge": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "a": {"trunk": 8, "thighL": 80, "shinL": -10, "thighR": -10, "shinR": -80, "footR": -150},
+      "b": {"trunk": 3, "thighL": 20, "shinL": 0, "thighR": -25, "shinR": -25, "footR": 160}
+    },
+    "bulgarian": {
+      "view": "side", "anchor": {"type": "ground"},
+      "props": [{"type": "bench", "x1": -0.95, "x2": -0.3, "y": 0.4}, {"type": "dumbbell"}],
+      "a": {"trunk": 15, "thighL": 80, "shinL": -10, "thighR": -5, "shinR": -140, "footR": -100},
+      "b": {"trunk": 5, "thighL": 15, "shinL": 0, "thighR": -25, "shinR": -95, "footR": -100}
+    },
+    "step_up": {
+      "view": "side", "anchor": {"type": "ankleL", "x": 0.1, "y": 0.35},
+      "props": [{"type": "box", "x1": -0.05, "x2": 0.45, "y": 0.35}],
+      "a": {"trunk": 20, "thighL": 85, "shinL": -15, "thighR": -25, "shinR": -10},
+      "b": {"trunk": 0, "thighL": 0, "shinL": 0, "thighR": 60, "shinR": -20}
+    },
+    "leg_extension": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.55},
+      "props": [{"type": "seat", "x1": -0.15, "x2": 0.45, "y": 0.52}, {"type": "line", "x1": -0.08, "y1": 0.52, "x2": -0.22, "y2": 1.15}],
+      "base": {"trunk": -12, "thigh": 90, "upper": 10, "fore": 40},
+      "a": {"shin": -5},
+      "b": {"shin": 85}
+    },
+    "seated_leg_curl": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.55},
+      "props": [{"type": "seat", "x1": -0.15, "x2": 0.45, "y": 0.52}],
+      "base": {"trunk": 15, "thigh": 90, "upper": 30, "fore": 80},
+      "a": {"shin": 85},
+      "b": {"shin": -15}
+    },
+    "lying_leg_curl": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"trunk": 88, "thigh": -92, "upper": 150, "fore": 90},
+      "a": {"shin": -92, "foot": -180},
+      "b": {"shin": 170, "foot": 90}
+    },
+    "nordic": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "tempo": [1.0, 3.5],
+      "base": {"shin": -90, "foot": 0, "upper": 60, "fore": 60},
+      "a": {"trunk": 65, "thigh": -65},
+      "b": {"trunk": 0, "thigh": 0}
+    },
+    "reverse_nordic": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"shin": -90, "foot": 0, "upper": 80, "fore": 80},
+      "a": {"trunk": -45, "thigh": 45},
+      "b": {"trunk": 0, "thigh": 0}
+    },
+    "bench_press": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.45},
+      "props": [{"type": "bench", "x1": -1.0, "x2": 0.2, "y": 0.4}, {"type": "barbell"}],
+      "base": {"trunk": -90, "thigh": 85, "shin": -20},
+      "a": {"upper": 75, "fore": 170},
+      "b": {"upper": 180, "fore": 180}
+    },
+    "fly_front": {
+      "view": "front", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "a": {"upperL": -95, "foreL": -100, "upperR": 95, "foreR": 100},
+      "b": {"upperL": -50, "foreL": 110, "upperR": 50, "foreR": -110}
+    },
+    "pushup": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"foot": 180},
+      "a": {"trunk": 73, "thigh": -73, "shin": -73, "upper": -60, "fore": 20},
+      "b": {"trunk": 66, "thigh": -66, "shin": -66, "upper": 0, "fore": 0}
+    },
+    "dips": {
+      "view": "side", "anchor": {"type": "hands", "y": 1.25}, "props": [{"type": "barAtHands"}],
+      "a": {"trunk": 20, "upper": -75, "fore": 10, "thigh": 10, "shin": -60},
+      "b": {"trunk": 8, "upper": 0, "fore": 0, "thigh": 5, "shin": -60}
+    },
+    "ohp": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "barbell"}],
+      "a": {"upper": 25, "fore": 165},
+      "b": {"upper": 172, "fore": 178}
+    },
+    "pike_pushup": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"thigh": -30, "shin": -30, "foot": 180},
+      "a": {"trunk": 128, "upper": 40, "fore": -30},
+      "b": {"trunk": 120, "upper": 0, "fore": 0}
+    },
+    "cable_row": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.35},
+      "props": [{"type": "seat", "x1": -0.3, "x2": 0.3, "y": 0.32}, {"type": "cable", "x": 1.35, "y": 0.5}],
+      "base": {"thigh": 80, "shin": 80, "foot": 170},
+      "a": {"trunk": 18, "upper": 85, "fore": 88},
+      "b": {"trunk": -5, "upper": -40, "fore": 85}
+    },
+    "db_row": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "base": {"trunk": 75, "thigh": 15, "shin": -10, "upperR": 0, "foreR": 0},
+      "a": {"upperL": 0, "foreL": 0},
+      "b": {"upperL": -100, "foreL": 0}
+    },
+    "inverted_row": {
+      "view": "side", "anchor": {"type": "hands", "y": 1.3}, "props": [{"type": "barAtHands"}],
+      "base": {"foot": 170},
+      "a": {"trunk": 60, "thigh": -60, "shin": -60, "upper": 180, "fore": 180},
+      "b": {"trunk": 50, "thigh": -50, "shin": -50, "upper": -120, "fore": 175}
+    },
+    "pullup": {
+      "view": "side", "anchor": {"type": "hands", "y": 2.35}, "props": [{"type": "barAtHands"}],
+      "base": {"thigh": 10, "shin": -60},
+      "a": {"trunk": 0, "upper": 180, "fore": 180},
+      "b": {"trunk": -5, "upper": 25, "fore": 175}
+    },
+    "lat_pulldown": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.5},
+      "props": [{"type": "seat", "x1": -0.25, "x2": 0.3, "y": 0.47}, {"type": "cable", "x": 0.05, "y": 2.4}, {"type": "barbell"}],
+      "base": {"trunk": -12, "thigh": 90, "shin": 0},
+      "a": {"upper": 170, "fore": 178},
+      "b": {"upper": 20, "fore": 170}
+    },
+    "face_pull": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "cable", "x": 1.3, "y": 1.6}],
+      "a": {"upper": 95, "fore": 95},
+      "b": {"upper": -80, "fore": 160}
+    },
+    "lateral_raise": {
+      "view": "front", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "a": {"upperL": -10, "foreL": -10, "upperR": 10, "foreR": 10},
+      "b": {"upperL": -88, "foreL": -95, "upperR": 88, "foreR": 95}
+    },
+    "rear_delt": {
+      "view": "front", "anchor": {"type": "ground"}, "props": [],
+      "a": {"upperL": -12, "foreL": -15, "upperR": 12, "foreR": 15},
+      "b": {"upperL": -90, "foreL": -90, "upperR": 90, "foreR": 90}
+    },
+    "ytw": {
+      "view": "front", "anchor": {"type": "ground"}, "props": [],
+      "a": {"upperL": -10, "foreL": -10, "upperR": 10, "foreR": 10},
+      "b": {"upperL": -150, "foreL": -150, "upperR": 150, "foreR": 150}
+    },
+    "curl": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "a": {"upper": 0, "fore": 0},
+      "b": {"upper": 10, "fore": 145}
+    },
+    "incline_curl": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.5},
+      "props": [{"type": "line", "x1": 0.05, "y1": 0.45, "x2": -0.42, "y2": 1.15}, {"type": "dumbbell"}],
+      "base": {"trunk": -35, "thigh": 85, "shin": 0, "upper": -20},
+      "a": {"fore": -20},
+      "b": {"fore": 120}
+    },
+    "cable_curl": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "cable", "x": -1.0, "y": 0.35}],
+      "base": {"upper": -30},
+      "a": {"fore": -30},
+      "b": {"fore": 120}
+    },
+    "overhead_ext": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "base": {"upper": 170},
+      "a": {"fore": 0},
+      "b": {"fore": 172}
+    },
+    "pushdown": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "cable", "x": 0.35, "y": 2.3}],
+      "base": {"trunk": 10, "upper": 5},
+      "a": {"fore": 100},
+      "b": {"fore": 5}
+    },
+    "calf_raise": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [],
+      "base": {"upper": 0, "fore": 0},
+      "a": {"foot": 105},
+      "b": {"foot": 45}
+    },
+    "cable_crunch": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "cable", "x": 0.25, "y": 2.2}],
+      "base": {"thigh": 0, "shin": -90, "foot": -90, "upper": 165, "fore": -15},
+      "a": {"trunk": 15},
+      "b": {"trunk": 75}
+    },
+    "dead_bug": {
+      "view": "side", "anchor": {"type": "hip", "x": 0, "y": 0.12}, "props": [],
+      "base": {"trunk": -90, "thighR": 180, "shinR": 90, "upperL": 180, "foreL": 180},
+      "a": {"thighL": 180, "shinL": 90, "upperR": 180, "foreR": 180},
+      "b": {"thighL": 95, "shinL": 95, "upperR": -95, "foreR": -95}
+    },
+    "hanging_leg_raise": {
+      "view": "side", "anchor": {"type": "hands", "y": 2.35}, "props": [{"type": "barAtHands"}],
+      "base": {"upper": 180, "fore": 180},
+      "a": {"thigh": 0, "shin": 0},
+      "b": {"thigh": 110, "shin": 40}
+    },
+    "pallof": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "cable", "x": -1.1, "y": 1.25}],
+      "a": {"upper": 10, "fore": 160},
+      "b": {"upper": 90, "fore": 90}
+    },
+    "carry": {
+      "view": "side", "anchor": {"type": "ground"}, "props": [{"type": "dumbbell"}],
+      "tempo": [0.6, 0.6],
+      "a": {"thighL": 20, "shinL": -5, "thighR": -15, "shinR": -25},
+      "b": {"thighL": -15, "shinL": -25, "thighR": 20, "shinR": -5}
+    }
+  },
+  "exercises": {
+    "back_squat": "squat_bar", "hack_squat": "leg_press", "goblet_squat": "goblet_squat", "tempo_squat": "bodyweight_squat",
+    "rdl_barbell": "rdl", "rdl_db": "rdl", "hip_thrust": "hip_thrust", "sl_rdl": "sl_rdl", "sl_glute_bridge": "glute_bridge", "kb_swing": "kb_swing",
+    "bulgarian": "bulgarian", "walking_lunge": "lunge", "step_up": "step_up", "split_squat": "lunge",
+    "leg_extension": "leg_extension", "reverse_nordic": "reverse_nordic",
+    "seated_leg_curl": "seated_leg_curl", "db_leg_curl": "lying_leg_curl", "nordic": "nordic",
+    "bench_bb": "bench_press", "bench_db": "bench_press", "incline_db": "bench_press", "pushup": "pushup", "dips": "dips",
+    "ohp_db": "ohp", "ohp_bb": "ohp", "landmine_press": "ohp", "pike_pushup": "pike_pushup",
+    "cable_row": "cable_row", "band_row": "cable_row", "chest_supported_row": "db_row", "one_arm_row": "db_row",
+    "inverted_row": "inverted_row", "trx_row": "inverted_row",
+    "lat_pulldown": "lat_pulldown", "single_arm_pulldown": "lat_pulldown", "band_pulldown": "lat_pulldown", "pullup": "pullup", "chinup": "pullup",
+    "cable_fly": "fly_front", "db_fly": "fly_front",
+    "cable_lateral": "lateral_raise", "db_lateral": "lateral_raise", "lean_away_lateral": "lateral_raise", "band_lateral": "lateral_raise",
+    "face_pull": "face_pull", "band_face_pull": "face_pull", "reverse_fly": "rear_delt", "band_pull_apart": "rear_delt", "ytw": "ytw",
+    "incline_curl": "incline_curl", "bayesian_curl": "cable_curl", "hammer_curl": "curl",
+    "overhead_cable_ext": "overhead_ext", "db_overhead_ext": "overhead_ext", "pushdown": "pushdown", "band_pushdown": "pushdown",
+    "diamond_pushup": "pushup", "dips_bench": "dips",
+    "standing_calf": "calf_raise", "sl_calf": "calf_raise", "kb_goblet_calf": "calf_raise",
+    "cable_crunch": "cable_crunch", "pallof": "pallof", "hanging_leg_raise": "hanging_leg_raise", "dead_bug": "dead_bug",
+    "suitcase_carry": "carry"
+  }
+}

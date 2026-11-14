@@ -9,6 +9,9 @@ iPhone-app (SwiftUI, iOS 18+, laget for iPhone 17 Pro) som skanner kroppen din m
 | **Kroppsskanning** | To-posisjons skann (forfra + fra siden) med ARKit body tracking (91 ledd) + LiDAR-dybde. Norsk taleveiledning, så du kan stå 3 m unna. |
 | **Mål** | Hals, bryst, midje, hofte, overarmer V/H, lår V/H, arm- og beinlengder, skulderbredde, skulder-/bekkenskjevhet, fremoverlent hode. Kan korrigeres med målebånd. |
 | **Analyse** | Fettprosent (U.S. Navy), fettfri masse, FFMI, midje/høyde-ratio, over-/underkropp-balanse, V-form, venstre/høyre-asymmetri, fremgang siden forrige skann. |
+| **Fett & plan** | Fettprosent, fettmasse og fettfri masse, kategori (ACE), *hvor* fettet sitter (midje/hofte, midje/høyde), risiko for bukfett (visceralt fett). Velg målfettprosent → fett som skal bort, målvekt, antall uker, kalorier, protein og skritt, graf med forventet utvikling, ukentlig justeringsregel. Fungerer uten skann (grovt BMI-anslag). |
+| **Utstyr & steder** | Legg inn treningssteder (hjemme, senteret, hytta) med nøyaktig hvilke apparater og hvilke manual- og kettlebellvekter du har. Hvert sted får eget program. Vektforslag rundes til manualene du faktisk har. Med lette vekter får du flere reps, ettsidige varianter og lengre nedfase. |
+| **Øvelsesvisning** | Hver øvelse vises som en animert figur der musklene som trenes er markert. Ligger det en ekte video eller AI-video i appen, brukes den i stedet. Du kan bytte øvelse til alternativer som passer utstyret ditt. |
 | **Program** | Splitt etter antall dager (helkropp / over-under / PPL), ukentlig volum per muskel med fraksjonell telling, ekstra volum til muskler som henger etter, ettsidige øvelser (svakeste side først) ved ubalanse, korrektiv oppvarming ved holdningsfunn, øvelsesbytte ved kne-/rygg-/skulderplager. |
 | **Progresjon** | Dobbel progresjon med automatiske vekt-/repsforslag, RIR-styring, mesosyklus med deload, pausetimer, estimert 1RM. |
 | **Kondisjon** | Sone 2 og norske 4×4-intervaller med pulssoner fra HUNT-formelen (211 − 0,64 × alder), daglig skrittmål. |
@@ -61,6 +64,17 @@ FIV/
 5. ~60 målinger per skann; trimmet median fjerner støy.
 
 Forventet nøyaktighet er noen centimeter på omkretser. Trenden over flere skann tatt under like forhold er det som teller. Første gang kan du kalibrere med målebånd i resultatskjermen.
+
+## Legge til ekte eller AI-genererte øvelsesvideoer
+
+Appen viser animasjoner for alle 67 øvelsene (definert i `FIV/Resources/ExerciseAnimations.json`).
+Slik legger du inn ekte videoer:
+
+1. Film øvelsen eller lag den med et AI-videoverktøy (f.eks. Sora, Veo eller Runway). Bruk korte klipp på 3–6 sekunder som går i løkke, filmet fra siden.
+2. Gi filen navn etter øvelsens id, for eksempel `back_squat.mp4`. Id-ene står i `ExerciseLibrary.swift`.
+3. Legg filen i `FIV/Resources/ExerciseVideos/` og kjør `xcodegen generate` på nytt.
+
+Appen viser videoen automatisk der den finnes og animasjonen ellers. Animasjonene kan justeres i JSON-filen. Vinklene er forklart øverst i filen.
 
 ## Personvern
 
