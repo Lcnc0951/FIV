@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PRESET_LABEL, PRESETS, type PresetKey } from '../engine/presets'
+import { minutesBetween, RUN_INFO, type RunType } from '../engine/week'
 import {
   EXPERIENCE_LABEL, GOAL_INFO, LIMITATION_LABEL, PHYSIQUE_INFO, POSTURE_GOAL_LABEL,
   type Experience, type Goal, type Limitation, type PhysiqueGoal, type PostureGoal, type Profile,
@@ -9,8 +10,10 @@ export const defaultProfile = (): Profile => {
   const gym = PRESETS.gym()
   return {
     name: '', sex: 'male', birthYear: 1990, heightCm: 180, weightKg: 80, goal: 'buildMuscle', experience: 'beginner',
-    daysPerWeek: 3, sessionMinutes: 60, limitations: [], physique: 'balanced', postureGoals: [], targetBodyFat: 0,
+    daysPerWeek: 3, sessionMinutes: 40, limitations: [], physique: 'balanced', postureGoals: [], targetBodyFat: 0,
     locations: [gym], activeLocationId: gym.id, scanMethod: 'camera',
+    trainingStart: '06:10', trainingEnd: '06:50', runsPerWeek: 2,
+    runTypes: ['intervals4x4', 'short45_20', 'tempo20'], weekendTraining: true, weekOverrides: {},
   }
 }
 
@@ -87,9 +90,25 @@ export function ProfileForm({ value, onChange, section = 'all', presets, onPrese
         <>
           <fieldset>
             <legend>Treningshverdag</legend>
-            <Stepper label="Økter per uke" value={value.daysPerWeek} min={2} max={6} onChange={(v) => set('daysPerWeek', v)} />
-            <Stepper label="Minutter per økt" value={value.sessionMinutes} min={30} max={120} step={5} onChange={(v) => set('sessionMinutes', v)} />
+            <div className="grid2">
+              <label className="field"><span>Trener fra</span><input id="t-start" type="time" value={value.trainingStart} onChange={(e) => onChange({ ...value, trainingStart: e.target.value, sessionMinutes: minutesBetween(e.target.value, value.trainingEnd) })} /></label>
+              <label className="field"><span>Til</span><input id="t-end" type="time" value={value.trainingEnd} onChange={(e) => onChange({ ...value, trainingEnd: e.target.value, sessionMinutes: minutesBetween(value.trainingStart, e.target.value) })} /></label>
+            </div>
+            <p className="hint">{value.sessionMinutes} minutter per økt. Programmet tilpasses tiden du har.</p>
+            <Stepper label="Styrkeøkter per uke" value={value.daysPerWeek} min={1} max={6} onChange={(v) => set('daysPerWeek', v)} />
+            <Stepper label="Løpeøkter per uke" value={value.runsPerWeek} min={0} max={4} onChange={(v) => set('runsPerWeek', v)} />
+            <label className="check"><input type="checkbox" checked={value.weekendTraining} onChange={(e) => set('weekendTraining', e.target.checked)} />Jeg kan trene på lørdag også</label>
           </fieldset>
+          {value.runsPerWeek > 0 && (
+            <fieldset>
+              <legend>Løpeøkter du liker</legend>
+              {(Object.keys(RUN_INFO) as RunType[]).map((r) => (
+                <label key={r} className="check"><input type="checkbox" checked={value.runTypes.includes(r)} onChange={(e) => set('runTypes', toggle(value.runTypes, r, e.target.checked))} />
+                  <span><strong>{RUN_INFO[r].label}</strong><br /><span className="muted small">{RUN_INFO[r].summary}</span></span></label>
+              ))}
+              <p className="hint">PT-en legger løpeøktene på dager uten styrke og veksler mellom intervalltypene fra uke til uke.</p>
+            </fieldset>
+          )}
           {presets && onPresets && (
             <fieldset>
               <legend>Hvor trener du?</legend>

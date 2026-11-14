@@ -29,6 +29,7 @@ const PATHS: Record<string, string> = {
   plus: 'M12 5v14M5 12h14',
   timer: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 10v4l2 2M9 2h6',
   posture: 'M12 3a2 2 0 1 0 0 .01M12 7v6M9 21l3-8 3 8M8 10h8',
+  music: 'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
 }
 export function Icon({ name, size = 20 }: { name: string; size?: number }) {
   return (

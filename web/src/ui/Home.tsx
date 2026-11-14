@@ -1,10 +1,11 @@
 import { analyzeBody, analyzeMuscles, planPosture } from '../engine/analyzer'
 import { analyzeFat, FAT_CATEGORY_LABEL, DISTRIBUTION_LABEL, nutrition, planFatLoss } from '../engine/coach'
-import { totalSets, type WorkoutDay } from '../engine/generator'
+import type { WorkoutDay } from '../engine/generator'
 import { DAILY_TIPS } from '../data/knowledge'
 import { avg, PHYSIQUE_INFO } from '../engine/types'
 import { Card, FindingRow, Icon, Metric, nb, dateNb } from './kit'
-import { activeLocation, sortedScans, useApp } from './state'
+import { TodayCard, type StartSession } from './Week'
+import { sortedScans, useApp } from './state'
 import { FatScale } from './Body'
 
 export function nextWorkout(days: WorkoutDay[] | undefined, lastDayName?: string): WorkoutDay | undefined {
@@ -13,7 +14,7 @@ export function nextWorkout(days: WorkoutDay[] | undefined, lastDayName?: string
   return days[(i + 1) % days.length]
 }
 
-export function Home({ go, startWorkout }: { go: (tab: string, sub?: string) => void; startWorkout: (d: WorkoutDay) => void }) {
+export function Home({ go, start }: { go: (tab: string, sub?: string) => void; start: (s: StartSession) => void }) {
   const { profile, pd, data, latest, program } = useApp()
   const scans = sortedScans(data.scans)
   const analysis = analyzeBody(pd, scans[0]?.measurements, scans[1]?.measurements)
@@ -22,8 +23,6 @@ export function Home({ go, startWorkout }: { go: (tab: string, sub?: string) => 
   const report = analyzeMuscles(pd, latest?.measurements, fat.bodyFatPercent)
   const posture = planPosture(pd, latest?.measurements)
   const n = nutrition(pd, fat.bodyFatPercent, profile.goal === 'loseFat' && plan.needed ? plan.targetKcal : undefined)
-  const lastLog = [...data.workouts].sort((a, b) => b.date.localeCompare(a.date))[0]
-  const next = nextWorkout(program?.days, lastLog?.dayName)
   const tip = DAILY_TIPS[Math.floor(Date.now() / 86_400_000) % DAILY_TIPS.length]
   const m = latest?.measurements
 
@@ -34,18 +33,7 @@ export function Home({ go, startWorkout }: { go: (tab: string, sub?: string) => 
         <h1>{profile.name ? `Hei, ${profile.name}` : 'Hei!'}</h1>
       </header>
 
-      {next && (
-        <Card className="hero-card" onClick={() => startWorkout(next)}>
-          <div className="row between">
-            <div>
-              <p className="eyebrow accent">Neste økt · {activeLocation(profile).name}</p>
-              <h2>{next.name}</h2>
-              <p className="muted small">{next.exercises.length} øvelser · {totalSets(next)} sett · {next.focus}</p>
-            </div>
-            <span className="play"><Icon name="play" size={26} /></span>
-          </div>
-        </Card>
-      )}
+      <TodayCard start={start} />
 
       {!latest && (
         <Card className="callout" onClick={() => go('scan')}>

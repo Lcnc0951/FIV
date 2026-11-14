@@ -256,3 +256,31 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .set-row input { padding: 8px 6px; text-align: center; }
 .set-row input::-webkit-inner-spin-button, .set-row input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .set-row input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+/* Ukeplan, dagens økt og intervalltimer */
+.today { gap: 10px; }
+.today h2 { font-size: 2rem; }
+.quote { font-size: 1.05rem; font-weight: 500; margin: 0; }
+.music { background: var(--card-2); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.music svg { color: var(--accent); flex: none; }
+.pl { display: inline-flex; flex-direction: column; text-decoration: none; color: var(--fg); background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; font-weight: 600; font-size: 0.85rem; min-width: 0; }
+.pl span { font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+.pl::before { content: '▶ Spotify'; font-size: 0.65rem; color: #1db954; font-weight: 700; letter-spacing: 0.04em; }
+.weekstrip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 4px; }
+.wday { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 6px 0; font-size: 0.68rem; color: var(--muted); min-width: 0; }
+.wday.today { border-color: var(--accent); color: var(--fg); }
+.wday-name { font-weight: 600; }
+.wday-label { font-family: var(--display); font-weight: 700; font-size: 0.85rem; color: var(--fg); }
+.wday.k-strength .wday-icon, .dot.k-strength { color: var(--accent); }
+.wday.k-run .wday-icon, .dot.k-run { color: var(--info); }
+.wday.k-optional .wday-icon, .dot.k-optional { color: var(--good); }
+.wday.k-rest .wday-icon, .dot.k-rest { color: var(--muted); }
+.dot { width: 32px; height: 32px; border-radius: 50%; background: var(--card-2); display: grid; place-items: center; flex: none; }
+.timer { border-radius: 20px; padding: 28px 16px; text-align: center; color: #fff; background: #3b6f5a; transition: background 0.4s; }
+.timer.i-hard { background: var(--accent); }
+.timer.i-pause { background: #3d5f8c; }
+.timer.i-moderat { background: #a8642a; }
+.timer.i-done { background: var(--good); }
+.timer-label { font-family: var(--display); font-size: 1.6rem; font-weight: 700; }
+.timer-clock { font-family: var(--display); font-size: 6rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.timer-sub { opacity: 0.85; font-size: 0.9rem; }

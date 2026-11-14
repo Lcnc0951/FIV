@@ -223,6 +223,7 @@ export function generateProgram(p: ProfileData, a: BodyAnalysis, postureRoutine:
   ]
   if (p.goal === 'loseFat' || a.cardioEmphasis === 2) notes.push('I underskudd: hold vektene oppe. Styrketrening er det som forteller kroppen at musklene skal beholdes.')
   if (p.goal === 'strength') notes.push('Basisløftene trenes tungt (3–6 reps) med lange pauser. Isolasjon bygger muskelen som løfter vekten.')
+  if (p.sessionMinutes <= 45) notes.push('Kort økt? Kjør to og to øvelser som supersett (f.eks. press + roing, knebøy + kjerne) med 60–90 sek pause etter hvert par. Det sparer ~30 % tid uten å tape effekt.')
   if (p.limitations.length) notes.push(`Øvelser som ofte provoserer ${p.limitations.map((l) => LIMITATION_LABEL[l].toLowerCase()).sort().join('/')} er byttet ut. Smerte opp til 3/10 som roer seg innen et døgn er normalt OK.`)
   if (p.physique !== 'balanced') notes.push(`Kroppsform-mål: ${PHYSIQUE_INFO[p.physique].label}. Volumet er vektet mot musklene som former dette.`)
   if (!days.some((d) => d.exercises.some((x) => exercise(x.exerciseId)?.pattern === 'verticalPull'))) {

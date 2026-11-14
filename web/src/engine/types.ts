@@ -1,3 +1,5 @@
+import type { DayKind, RunType } from './week'
+
 // Domene-typer. Speiler FIV/Models/Domain.swift så data kan deles med iOS-appen (LiDAR).
 
 export type Sex = 'male' | 'female'
@@ -106,6 +108,25 @@ export interface Profile {
   activeLocationId: string
   /** Hvilken skannemetode som er aktiv. LiDAR krever iPhone-appen. */
   scanMethod: 'camera' | 'lidar'
+  /** Fast treningstid, f.eks. 06:10–06:50. */
+  trainingStart: string
+  trainingEnd: string
+  /** Løpeøkter per uke i tillegg til styrke (daysPerWeek = styrkeøkter). */
+  runsPerWeek: number
+  runTypes: RunType[]
+  weekendTraining: boolean
+  /** Brukerens egne endringer i ukeplanen, per ukedag (0 = mandag). */
+  weekOverrides?: Partial<Record<number, { kind: DayKind; run?: RunType }>>
+}
+
+/** Fyller inn nye felt for profiler laget i eldre versjoner. */
+export function withDefaults(p: Profile): Profile {
+  return {
+    ...p,
+    trainingStart: p.trainingStart ?? '06:10', trainingEnd: p.trainingEnd ?? '06:50', runsPerWeek: p.runsPerWeek ?? 2,
+    runTypes: p.runTypes ?? ['intervals4x4', 'short45_20', 'tempo20'], weekendTraining: p.weekendTraining ?? true,
+    weekOverrides: p.weekOverrides ?? {},
+  }
 }
 
 /** Profilen slik motoren ser den — med valgt sted. Tilsvarer Swift `ProfileData`. */

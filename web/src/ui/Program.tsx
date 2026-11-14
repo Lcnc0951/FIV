@@ -3,6 +3,7 @@ import { totalSets, type Prescription, type WorkoutDay } from '../engine/generat
 import { alternatives, equipmentText, exercise, isCompound } from '../engine/library'
 import { MUSCLE_LABEL, MUSCLES, type Exercise } from '../engine/types'
 import { DrillRow } from './Body'
+import { WeekEditor } from './Week'
 import { Bar, Card, Icon, Sheet, Tag } from './kit'
 import { animationFor, StickFigure } from './StickFigure'
 import { activeLocation, useApp } from './state'
@@ -26,6 +27,7 @@ export function Program({ startWorkout }: { startWorkout: (d: WorkoutDay) => voi
           ))}
         </div>
       )}
+      <WeekEditor />
       {!program ? (
         <Card><p>Ingen program for {loc.name} ennå.</p><button className="btn primary" onClick={() => regenerate(loc.id)}>Lag program</button></Card>
       ) : (

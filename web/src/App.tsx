@@ -11,6 +11,7 @@ import { Onboarding, Ring } from './ui/ProfileForm'
 import { Scan } from './ui/Scan'
 import { AppProvider, buildPrograms } from './ui/state'
 import { Workout } from './ui/Workout'
+import { RunTimer, type StartSession } from './ui/Week'
 
 const TABS = [
   ['home', 'Hjem', 'home'], ['body', 'Kropp', 'body'], ['scan', 'Skann', 'scan'], ['program', 'Program', 'list'], ['pt', 'PT', 'coach'],
@@ -51,7 +52,7 @@ export default function App() {
 function Shell() {
   const [tab, setTab] = useState<Tab>(readHash)
   const [sub, setSub] = useState<string | undefined>()
-  const [workout, setWorkout] = useState<WorkoutDay | null>(null)
+  const [session, setSession] = useState<StartSession | null>(null)
   useEffect(() => {
     const on = () => setTab(readHash())
     addEventListener('hashchange', on)
@@ -59,7 +60,10 @@ function Shell() {
   }, [])
   const go = (t: string, s?: string) => { setSub(s); location.hash = t; setTab(t as Tab); scrollTo(0, 0) }
 
-  if (workout) return <main className="app"><Workout day={workout} onClose={() => { setWorkout(null); scrollTo(0, 0) }} /></main>
+  const close = () => { setSession(null); scrollTo(0, 0) }
+  if (session?.kind === 'strength') return <main className="app"><Workout day={session.day} onClose={close} /></main>
+  if (session?.kind === 'run') return <main className="app"><RunTimer run={session.run} onClose={close} /></main>
+  const startWorkout = (day: WorkoutDay) => { setSession({ kind: 'strength', day }); scrollTo(0, 0) }
 
   return (
     <>
@@ -67,10 +71,10 @@ function Shell() {
         {tab === 'home' && (
           <button className="profile-btn icon-btn" onClick={() => go('profil')} aria-label="Profil og innstillinger"><Icon name="user" size={22} /></button>
         )}
-        {tab === 'home' && <Home go={go} startWorkout={setWorkout} />}
+        {tab === 'home' && <Home go={go} start={(x) => { setSession(x); scrollTo(0, 0) }} />}
         {tab === 'body' && <Body key={sub} initial={sub} />}
         {tab === 'scan' && <Scan />}
-        {tab === 'program' && <Program startWorkout={setWorkout} />}
+        {tab === 'program' && <Program startWorkout={startWorkout} />}
         {tab === 'pt' && <Coach />}
         {tab === 'profil' && <ProfileView onBack={() => go('home')} />}
       </main>

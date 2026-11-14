@@ -1,7 +1,7 @@
 // Lagring: privat database per bruker når appen kjører som Claude-artifact, ellers nettleserens localStorage.
 // Alle data er dine — ingen andre (heller ikke eieren av artifacten) kan lese dem.
 import type { TrainingProgram } from '../engine/generator'
-import type { BodyScan, Profile, WorkoutEntry } from '../engine/types'
+import { withDefaults, type BodyScan, type Profile, type WorkoutEntry } from '../engine/types'
 
 export interface AppData {
   profile?: Profile
@@ -95,6 +95,7 @@ export async function openStore(): Promise<{ backend: Backend; data: AppData }> 
               return { backend: cloud, data: local }
             }
           }
+          if (data.profile) data.profile = withDefaults(data.profile)
           cloud.primeMain(data)
           return { backend: cloud, data }
         }
@@ -102,5 +103,7 @@ export async function openStore(): Promise<{ backend: Backend; data: AppData }> 
     } catch { /* faller tilbake til lokal lagring */ }
   }
   const local = new LocalBackend()
-  return { backend: local, data: await local.load() }
+  const data = await local.load()
+  if (data.profile) data.profile = withDefaults(data.profile)
+  return { backend: local, data }
 }
