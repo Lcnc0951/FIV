@@ -33,7 +33,8 @@ export default function App() {
   if (!store.data.profile) {
     return (
       <main className="app">
-        <Onboarding onDone={async (p: Profile) => {
+        <Onboarding onDone={async (p0: Profile) => {
+          const p = { ...p0, cycleStart: new Date().toISOString() }
           const programs = buildPrograms(p, store.data.scans)
           await store.backend.saveProfile(p); await store.backend.savePrograms(programs)
           setStore({ ...store, data: { ...store.data, profile: p, programs } })
@@ -61,8 +62,8 @@ function Shell() {
   const go = (t: string, s?: string) => { setSub(s); location.hash = t; setTab(t as Tab); scrollTo(0, 0) }
 
   const close = () => { setSession(null); scrollTo(0, 0) }
-  if (session?.kind === 'strength') return <main className="app"><Workout day={session.day} onClose={close} /></main>
-  if (session?.kind === 'run') return <main className="app"><RunTimer run={session.run} onClose={close} /></main>
+  if (session?.kind === 'strength') return <main className="app"><Workout day={session.day} volumeFactor={session.volumeFactor} onClose={close} /></main>
+  if (session?.kind === 'run') return <main className="app"><RunTimer session={session} onClose={close} /></main>
   const startWorkout = (day: WorkoutDay) => { setSession({ kind: 'strength', day }); scrollTo(0, 0) }
 
   return (

@@ -7,7 +7,9 @@ import { Card, Icon, nb, speak, Tag } from './kit'
 import { ExerciseSheet } from './Program'
 import { activeLocation, useApp } from './state'
 
-export function Workout({ day, onClose }: { day: WorkoutDay; onClose: () => void }) {
+export function Workout({ day: original, volumeFactor = 1, onClose }: { day: WorkoutDay; volumeFactor?: number; onClose: () => void }) {
+  // Lett uke / dårlig dagsform: færre sett
+  const day: WorkoutDay = volumeFactor >= 1 ? original : { ...original, exercises: original.exercises.map((p) => ({ ...p, sets: Math.max(1, Math.round(p.sets * volumeFactor)), rir: p.rir + (volumeFactor <= 0.5 ? 1 : 0) })) }
   const { data, profile, logWorkout } = useApp()
   const [logs, setLogs] = useState<Record<string, SetLog[]>>({})
   const [restUntil, setRestUntil] = useState<number | null>(null)
@@ -52,6 +54,7 @@ export function Workout({ day, onClose }: { day: WorkoutDay; onClose: () => void
         <button className="btn ghost" onClick={onClose}><Icon name="back" /> Avslutt</button>
         <h1 className="h2">{day.name}</h1>
       </header>
+      {volumeFactor < 1 && <p className="adjust small"><Icon name="info" size={14} /> Lettere økt i dag: {Math.round(volumeFactor * 100)} % av settene.</p>}
       {restUntil && (
         <div className="rest-bar" role="timer" aria-live="polite">
           <Icon name="timer" /> Pause <strong className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</strong>

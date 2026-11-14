@@ -24,7 +24,7 @@ export function nutrition(p: ProfileData, bodyFat?: number, overrideKcal?: numbe
     strength: [1.05, 'Lite overskudd gir best styrkeutvikling.'],
     health: [1, 'Hold vekten stabil, fokuser på kvalitet og protein.'],
   } as Record<string, [number, string]>)[p.goal]
-  const target = overrideKcal ?? maintenance * factor
+  const target = (overrideKcal ?? maintenance * factor) + (p.kcalOffset ?? 0)
   const perKg = { loseFat: 2.2, recomposition: 2.0, buildMuscle: 1.8, strength: 1.8, health: 1.6 }[p.goal]
   const protein = perKg * w
   const fat = Math.max(0.7 * w, target * 0.25 / 9)

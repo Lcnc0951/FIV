@@ -4,6 +4,7 @@ import { alternatives, equipmentText, exercise, isCompound } from '../engine/lib
 import { MUSCLE_LABEL, MUSCLES, type Exercise } from '../engine/types'
 import { DrillRow } from './Body'
 import { WeekEditor } from './Week'
+import { CycleBanner } from './Daily'
 import { Bar, Card, Icon, Sheet, Tag } from './kit'
 import { animationFor, StickFigure } from './StickFigure'
 import { activeLocation, useApp } from './state'
@@ -18,7 +19,7 @@ export function Program({ startWorkout }: { startWorkout: (d: WorkoutDay) => voi
   if (current && program) return <DayView day={current} warmup={program.warmup} onBack={() => setDay(null)} startWorkout={startWorkout} />
   return (
     <div className="stack">
-      <header className="page-head row between"><h1>Program</h1><button className="btn ghost" onClick={() => regenerate(loc.id)}>Lag nytt</button></header>
+      <header className="page-head row between"><h1>Program</h1><button className="btn ghost" onClick={() => regenerate(loc.id)}>Bytt øvelser</button></header>
       {profile.locations.length > 1 && (
         <div className="segmented wrap" role="radiogroup" aria-label="Treningssted">
           {profile.locations.map((l) => (
@@ -27,6 +28,7 @@ export function Program({ startWorkout }: { startWorkout: (d: WorkoutDay) => voi
           ))}
         </div>
       )}
+      <CycleBanner />
       <WeekEditor />
       {!program ? (
         <Card><p>Ingen program for {loc.name} ennå.</p><button className="btn primary" onClick={() => regenerate(loc.id)}>Lag program</button></Card>

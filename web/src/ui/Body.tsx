@@ -6,6 +6,7 @@ import { avg, PHYSIQUE_INFO } from '../engine/types'
 import { Bar, Card, Icon, LineChart, Metric, nb, Tag, type Series } from './kit'
 import { animationNamed, StickFigure } from './StickFigure'
 import { sortedScans, useApp } from './state'
+import { WeightCard } from './Daily'
 
 export function FatScale({ position }: { position: number }) {
   return (
@@ -56,6 +57,7 @@ function Fat() {
         </div>
         {fat.source === 'bmiEstimate' && <p className="warn small"><Icon name="alert" size={14} /> Grovt anslag fra BMI og alder. Skann kroppen for et mye bedre estimat.</p>}
       </Card>
+      <WeightCard />
       <Card>
         <h3>Hvor sitter fettet?</h3>
         <p>{DISTRIBUTION_LABEL[fat.distribution]}</p>

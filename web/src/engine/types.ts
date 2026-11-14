@@ -119,6 +119,12 @@ export interface Profile {
   weekOverrides?: Partial<Record<number, { kind: DayKind; run?: RunType }>>
   /** Tall fra Apple-klokka / Helse-appen (skrives inn for hånd). */
   watch?: WatchData
+  /** Start på nåværende treningsperiode (ISO-dato). */
+  cycleStart?: string
+  /** Kalorijustering fra vekttrenden (kcal per dag). */
+  kcalOffset?: number
+  /** Helsesjekk (PAR-Q+): svar per spørsmål. */
+  health?: { answers: boolean[]; answeredAt: string }
 }
 
 export interface WatchData {
@@ -157,6 +163,7 @@ export interface ProfileData {
   physique: PhysiqueGoal
   postureGoals: PostureGoal[]
   watch?: WatchData
+  kcalOffset?: number
 }
 
 /** Samme feltnavn som Swift `ScanMeasurements` (JSON fra iOS-appen kan importeres direkte). */
@@ -214,6 +221,8 @@ export interface WorkoutEntry {
   dayName: string
   exerciseId: string
   sets: SetLog[]
+  /** Løpeøkter: hvor tungt (1–10), puls, distanse, antall drag / minutter. */
+  run?: { type: RunType; rpe: number; avgHR?: number; km?: number; reps?: number; minutes?: number }
 }
 
 export const COMPOUND: Set<MovementPattern> = new Set(['squat', 'hinge', 'singleLeg', 'horizontalPush', 'verticalPush', 'horizontalPull', 'verticalPull', 'carry'])

@@ -31,28 +31,36 @@ export const RUN_INFO: Record<RunType, { label: string; short: string; hard: boo
   },
 }
 
-export function runSegments(type: RunType, totalMinutes = 40): Segment[] {
+/** `reps`/`minutes` fra løpeprogresjonen, `scale` < 1 ved dårlig dagsform eller lett uke. */
+export function runSegments(type: RunType, totalMinutes = 40, params?: { reps?: number; minutes?: number }, scale = 1): Segment[] {
   const s: Segment[] = []
+  const scaled = (n: number, min: number) => Math.max(min, Math.round(n * scale))
   switch (type) {
-    case 'intervals4x4':
+    case 'intervals4x4': {
+      const reps = scaled(params?.reps ?? 4, 2)
       s.push({ label: 'Oppvarming', seconds: 600, intensity: 'rolig' })
-      for (let i = 1; i <= 4; i++) {
-        s.push({ label: `Drag ${i} av 4`, seconds: 240, intensity: 'hard' })
-        if (i < 4) s.push({ label: 'Rolig jogg', seconds: 180, intensity: 'pause' })
+      for (let i = 1; i <= reps; i++) {
+        s.push({ label: `Drag ${i} av ${reps}`, seconds: 240, intensity: 'hard' })
+        if (i < reps) s.push({ label: 'Rolig jogg', seconds: 180, intensity: 'pause' })
       }
       s.push({ label: 'Nedjogg', seconds: 300, intensity: 'rolig' })
       break
-    case 'short45_20':
+    }
+    case 'short45_20': {
+      const reps = scaled(params?.reps ?? 12, 6)
       s.push({ label: 'Oppvarming', seconds: 600, intensity: 'rolig' })
-      for (let i = 1; i <= 12; i++) {
-        s.push({ label: `Drag ${i} av 12`, seconds: 45, intensity: 'hard' })
-        if (i < 12) s.push({ label: 'Pause', seconds: 20, intensity: 'pause' })
+      for (let i = 1; i <= reps; i++) {
+        s.push({ label: `Drag ${i} av ${reps}`, seconds: 45, intensity: 'hard' })
+        if (i < reps) s.push({ label: 'Pause', seconds: 20, intensity: 'pause' })
       }
       s.push({ label: 'Nedjogg', seconds: 300, intensity: 'rolig' })
       break
-    case 'tempo20':
-      s.push({ label: 'Oppvarming', seconds: 300, intensity: 'rolig' }, { label: 'Terskel', seconds: 1200, intensity: 'moderat' }, { label: 'Nedjogg', seconds: 300, intensity: 'rolig' })
+    }
+    case 'tempo20': {
+      const min = scaled(params?.minutes ?? 20, 12)
+      s.push({ label: 'Oppvarming', seconds: 300, intensity: 'rolig' }, { label: 'Terskel', seconds: min * 60, intensity: 'moderat' }, { label: 'Nedjogg', seconds: 300, intensity: 'rolig' })
       break
+    }
     case 'easy':
       s.push({ label: 'Rolig løp', seconds: Math.max(20, Math.min(45, totalMinutes - 5)) * 60, intensity: 'rolig' })
       break

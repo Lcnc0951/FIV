@@ -8,8 +8,18 @@ import { uid } from '../engine/types'
 import { effectiveMaxHR } from '../engine/composition'
 import { Card, Icon, Sheet, speak, Tag } from './kit'
 import { useApp } from './state'
+import { adjustDay, nextRun, WARNING_SIGNS, type RunLog } from '../engine/daily'
+import { useCycle, useToday } from './Daily'
 
-export type StartSession = { kind: 'strength'; day: WorkoutDay } | { kind: 'run'; run: RunType }
+export type StartSession =
+  | { kind: 'strength'; day: WorkoutDay; volumeFactor?: number }
+  | { kind: 'run'; run: RunType; reps?: number; minutes?: number; scale?: number; note?: string }
+
+/** Logg over løpeøkter (for progresjon). */
+export function useRunLogs(): RunLog[] {
+  const { data } = useApp()
+  return data.workouts.filter((w) => w.run).map((w) => ({ ...w.run!, date: w.date }))
+}
 
 export function useWeek() {
   const { profile, program, data } = useApp()
@@ -55,12 +65,18 @@ export function WeekStrip({ onPick }: { onPick?: (i: number) => void }) {
 export function TodayCard({ start }: { start: (s: StartSession) => void }) {
   const { profile } = useApp()
   const { days, done, strengthDay, today } = useWeek()
+  const { readiness: r } = useToday()
+  const cycle = useCycle()
+  const runLogs = useRunLogs()
   const [shown, setShown] = useState(today)
-  const d = days[shown]
+  const isToday = shown === today
+  const adj = adjustDay(days[shown], isToday ? r?.level : undefined, cycle.deload && !cycle.finished)
+  const d = adj.day
   const s = strengthDay(d)
   const m = music(d)
-  const isToday = shown === today
+  const runParams = d.run && d.kind !== 'rest' ? nextRun(d.run, runLogs) : undefined
   const tip = MORNING_TIPS[Math.floor(Date.now() / 86_400_000) % MORNING_TIPS.length]
+  const setsShown = s ? s.exercises.reduce((n, p) => n + Math.max(1, Math.round(p.sets * adj.volumeFactor)), 0) : 0
   return (
     <Card className="today">
       <div className="row between">
@@ -69,8 +85,10 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
       </div>
       <h2>{dayTitle(d, s)}</h2>
       <p className="quote">«{motivation(d, new Date(Date.now() + (shown - today) * 86_400_000))}»</p>
-      {d.kind === 'strength' && s && <p className="muted small">{s.exercises.length} øvelser · {totalSets(s)} sett · {s.focus}</p>}
+      {adj.message && <p className="adjust small"><Icon name="info" size={14} /> {adj.message}</p>}
+      {d.kind === 'strength' && s && <p className="muted small">{s.exercises.length} øvelser · {setsShown} sett · {s.focus}</p>}
       {d.run && d.kind !== 'rest' && <p className="muted small">{RUN_INFO[d.run].summary}</p>}
+      {runParams?.note && <p className="small"><strong>Progresjon:</strong> {runParams.note}</p>}
       {d.note && <p className="muted small">{d.note}</p>}
       {d.kind === 'rest' && <p className="muted small">Gå en tur, tøy litt og sov godt. Holdningsrutinen passer fint i dag.</p>}
       {m && (
@@ -81,8 +99,8 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
           </div>
         </div>
       )}
-      {d.kind === 'strength' && s && <button className="btn primary big full" onClick={() => start({ kind: 'strength', day: s })}><Icon name="play" /> Start styrkeøkta</button>}
-      {d.run && d.kind !== 'rest' && <button className="btn primary big full" onClick={() => start({ kind: 'run', run: d.run! })}><Icon name="timer" /> Start intervalltimer</button>}
+      {d.kind === 'strength' && s && <button className="btn primary big full" onClick={() => start({ kind: 'strength', day: s, volumeFactor: adj.volumeFactor })}><Icon name="play" /> Start styrkeøkta</button>}
+      {d.run && d.kind !== 'rest' && <button className="btn primary big full" onClick={() => start({ kind: 'run', run: d.run!, reps: runParams?.reps, minutes: runParams?.minutes, scale: adj.runScale, note: runParams?.note })}><Icon name="timer" /> {d.run && RUN_INFO[d.run].hard ? 'Start intervalltimer' : 'Start løpetimer'}</button>}
       {isToday && d.kind !== 'rest' && <p className="hint">{tip}</p>}
       <WeekStrip onPick={setShown} />
     </Card>
@@ -142,9 +160,13 @@ export function WeekEditor() {
 }
 
 /** Intervalltimer med tale og pip — løp med telefonen i lomma. */
-export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }) {
+export function RunTimer({ session, onClose }: { session: Extract<StartSession, { kind: 'run' }>; onClose: () => void }) {
+  const run = session.run
   const { profile, logWorkout } = useApp()
-  const segs = useMemo(() => runSegments(run, profile.sessionMinutes), [run, profile.sessionMinutes])
+  const segs = useMemo(() => runSegments(run, profile.sessionMinutes, { reps: session.reps, minutes: session.minutes }, session.scale ?? 1), [run, profile.sessionMinutes, session])
+  const [rpe, setRpe] = useState(7)
+  const [avgHR, setAvgHR] = useState('')
+  const [km, setKm] = useState('')
   const total = totalSeconds(segs)
   const [elapsed, setElapsed] = useState(0)
   const [running, setRunning] = useState(false)
@@ -166,8 +188,8 @@ export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }
   let acc = 0, idx = segs.length - 1
   for (let i = 0; i < segs.length; i++) { if (elapsed < acc + segs[i].seconds) { idx = i; break } acc += segs[i].seconds }
   const seg = segs[idx]
-  const left = Math.max(0, Math.ceil(acc + seg.seconds - elapsed))
   const finished = elapsed >= total
+  const left = finished ? 0 : Math.max(0, Math.ceil(acc + seg.seconds - elapsed))
 
   useEffect(() => {
     if (!running) return
@@ -198,7 +220,10 @@ export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }
   useEffect(() => () => { wake.current?.release().catch(() => undefined) }, [])
 
   const save = async () => {
-    await logWorkout([{ id: uid(), date: new Date().toISOString(), dayName: RUN_INFO[run].label, exerciseId: `run:${run}`, sets: [] }])
+    const hardReps = segs.filter((x) => x.intensity === 'hard').length
+    const tempoMin = Math.round((segs.find((x) => x.intensity === 'moderat')?.seconds ?? 0) / 60)
+    await logWorkout([{ id: uid(), date: new Date().toISOString(), dayName: RUN_INFO[run].label, exerciseId: `run:${run}`, sets: [],
+      run: { type: run, rpe, avgHR: avgHR ? +avgHR : undefined, km: km ? +km.replace(',', '.') : undefined, reps: hardReps || undefined, minutes: tempoMin || undefined } }])
     onClose()
   }
   const hr = effectiveMaxHR(new Date().getFullYear() - profile.birthYear, profile.watch?.maxHR)
@@ -218,11 +243,26 @@ export function RunTimer({ run, onClose }: { run: RunType; onClose: () => void }
       {hardTotal > 0 && <p className="center small muted">{hardDone} av {hardTotal} drag gjort · totalt {Math.round(total / 60)} min</p>}
       {!finished
         ? <button className="btn primary big full" onClick={toggle}>{running ? 'Pause' : elapsed > 0 ? 'Fortsett' : 'Start'}</button>
-        : <button className="btn primary big full" onClick={save}>Lagre økta</button>}
+        : (
+          <Card>
+            <h3>Hvordan gikk det?</h3>
+            <label className="field"><span>Hvor tungt føltes det? <strong>{rpe}/10</strong> {rpe <= 6 ? '(lett)' : rpe <= 8 ? '(passe hardt)' : '(maks)'}</span>
+              <input id="rpe" type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(+e.target.value)} /></label>
+            <div className="grid2">
+              <label className="field"><span>Snittpuls (valgfritt)</span><input id="run-hr" type="number" inputMode="numeric" value={avgHR} onChange={(e) => setAvgHR(e.target.value)} /></label>
+              <label className="field"><span>Km (valgfritt)</span><input id="run-km" type="number" inputMode="decimal" step={0.1} value={km} onChange={(e) => setKm(e.target.value)} /></label>
+            </div>
+            <p className="muted small">Neste økt av samme type tilpasses: lett føles → flere drag eller høyere fart.</p>
+            <button className="btn primary big full" onClick={save}>Lagre økta</button>
+          </Card>
+        )}
       <Card>
-        <p className="small"><strong>Slik:</strong> {RUN_INFO[run].summary}</p>
+        <p className="small"><strong>Dagens økt:</strong> {hardTotal > 0 ? `${segs.filter((x) => x.intensity === 'hard').length} drag · ` : ''}{Math.round(total / 60)} min totalt{(session.scale ?? 1) < 1 ? ' (redusert etter dagsform/lett uke)' : ''}.</p>
+        <p className="small muted">{RUN_INFO[run].summary}</p>
         <p className="small muted">{RUN_INFO[run].why}</p>
+        {session.note && <p className="small"><strong>Progresjon:</strong> {session.note}</p>}
         <p className="small muted">Telefonen sier fra ved hvert skifte, så du kan ha den i lomma. Har du pulsklokke: harde drag 85–95 % av makspuls.</p>
+        <p className="small muted">{WARNING_SIGNS}</p>
       </Card>
     </div>
   )

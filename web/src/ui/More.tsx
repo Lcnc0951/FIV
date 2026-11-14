@@ -4,9 +4,11 @@ import { locationSummary } from '../engine/generator'
 import { PRESET_LABEL, PRESETS, type PresetKey } from '../engine/presets'
 import { EQUIPMENT_INFO, EQUIPMENT_ITEMS, type EquipmentItem, type Profile, type TrainingLocation } from '../engine/types'
 import { lidarStatus } from '../scan/providers'
+import { parseWatchText } from '../engine/daily'
 import { Card, Icon, Sheet, Tag } from './kit'
 import { ProfileForm } from './ProfileForm'
 import { useApp } from './state'
+import { Chat } from './Chat'
 
 export function Coach() {
   const [open, setOpen] = useState<string | null>(null)
@@ -15,6 +17,7 @@ export function Coach() {
   return (
     <div className="stack">
       <header className="page-head"><h1>Din PT</h1></header>
+      <Chat />
       <Card><p className="eyebrow">Dagens tips</p><p>{DAILY_TIPS[Math.floor(Date.now() / 86_400_000) % DAILY_TIPS.length]}</p></Card>
       {cats.map((c) => (
         <section key={c} className="stack-s">
@@ -48,6 +51,10 @@ export function ProfileView({ onBack }: { onBack: () => void }) {
   const [loc, setLoc] = useState<string | null>(null)
   const [copied, setCopied] = useState('')
   const dirty = JSON.stringify(draft) !== JSON.stringify(profile)
+  const PROGRAM_KEYS: (keyof Profile)[] = ['sex', 'birthYear', 'heightCm', 'goal', 'experience', 'daysPerWeek', 'sessionMinutes', 'limitations', 'physique', 'postureGoals', 'locations']
+  const programChanged = PROGRAM_KEYS.some((k) => JSON.stringify(draft[k]) !== JSON.stringify(profile[k]))
+  const [paste, setPaste] = useState('')
+  const [pasteMsg, setPasteMsg] = useState('')
   const lidar = lidarStatus()
   const editing = draft.locations.find((l) => l.id === loc)
   const setLocation = (l: TrainingLocation) => setDraft({ ...draft, locations: draft.locations.map((x) => (x.id === l.id ? l : x)) })
@@ -84,7 +91,29 @@ export function ProfileView({ onBack }: { onBack: () => void }) {
         <label className="check"><input type="radio" name="scan" checked={draft.scanMethod === 'lidar'} onChange={() => setDraft({ ...draft, scanMethod: 'lidar' })} />LiDAR via FIV-appen for iPhone Pro</label>
         <p className="hint">{draft.scanMethod === 'lidar' ? lidar.reason + ' Du kan likevel importere skann eksportert fra appen.' : 'LiDAR gir ekte 3D-dybde og mer presise mål. Aktiver når iPhone-appen er klar.'}</p>
       </fieldset>
-      <button className="btn primary big full sticky-save" disabled={!dirty} onClick={() => saveProfile(draft)}>{dirty ? 'Lagre og oppdater programmene' : 'Lagret'}</button>
+      <fieldset>
+        <legend>Hent fra Apple Helse med Snarvei</legend>
+        <p className="small">Lim inn tekst fra en Snarvei (eller skriv selv), f.eks. «Kondisjon: 39 · Hvilepuls: 52 · Skritt: 8764 · Aktiv energi: 657 · Maks puls: 175».</p>
+        <textarea id="shortcut-paste" className="input" rows={3} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Lim inn her" />
+        <button className="btn full" disabled={!paste.trim()} onClick={() => {
+          const w = parseWatchText(paste)
+          if (!Object.keys(w).length) { setPasteMsg('Fant ingen tall jeg kjente igjen.'); return }
+          setDraft({ ...draft, watch: { ...draft.watch, ...w } }); setPaste('')
+          setPasteMsg(`Leste inn ${Object.keys(w).filter((k) => k !== 'updated').length} verdier. Trykk Lagre.`)
+        }}>Les inn</button>
+        {pasteMsg && <p className="small muted">{pasteMsg}</p>}
+        <details>
+          <summary>Slik lager du Snarveien (ca. 3 min)</summary>
+          <ol className="small">
+            <li>Åpne Snarveier-appen → + → Legg til handling → søk «Finn helseprøver».</li>
+            <li>Velg type «Kondisjon (VO₂-maks)», sorter etter «Startdato» nyeste først, grense 1.</li>
+            <li>Gjenta for «Hvilepuls», «Skritt» (siste 7 dager, «Sum» delt på 7) og «Aktiv energi».</li>
+            <li>Legg til «Tekst» med linjene «Kondisjon: [verdi]», «Hvilepuls: [verdi]» osv., og til slutt «Kopier til utklipp».</li>
+            <li>Kjør Snarveien, kom tilbake hit og lim inn.</li>
+          </ol>
+        </details>
+      </fieldset>
+      <button className="btn primary big full sticky-save" disabled={!dirty} onClick={() => saveProfile(draft, programChanged)}>{!dirty ? 'Lagret' : programChanged ? 'Lagre — starter ny treningsperiode' : 'Lagre'}</button>
       <fieldset>
         <legend>Data</legend>
         <p className="small">{backend.kind === 'cloud' ? 'Dataene dine lagres privat på kontoen din og følger deg mellom enheter.' : 'Dataene dine lagres bare i denne nettleseren.'}</p>
