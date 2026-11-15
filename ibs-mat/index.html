@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
+<title>Magevennlig kjøkken</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: sticky "hva tåler jeg ikke"-panel beside a recipe grid; tabs switch to food list and guide */
+:root{
+  --bg:#F1F5EF; --surface:#FFFFFF; --surface-2:#E6EDE2; --ink:#16241B; --muted:#56685C; --line:#D3DDCF;
+  --accent:#2D6A48; --accent-soft:#DCEBE0; --accent-ink:#FFFFFF;
+  --sun:#E3A13A; --sun-soft:#FBEBCF; --sun-ink:#6A4508;
+  --tomato:#C2452D; --tomato-soft:#F8E0D9; --ok:#2E7D4F; --limit:#9A620E;
+  --shadow:0 1px 2px rgba(22,36,27,.06),0 10px 28px rgba(22,36,27,.09);
+  --backdrop:rgba(12,22,16,.55);
+  --f-display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Figtree","Segoe UI",system-ui,-apple-system,sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1612; --surface:#17211B; --surface-2:#1F2C24; --ink:#E7EFE9; --muted:#9DB0A3; --line:#2C3B31;
+  --accent:#73C293; --accent-soft:#1F3829; --accent-ink:#0C1A11;
+  --sun:#F0B65A; --sun-soft:#3A2D14; --sun-ink:#F6D49A;
+  --tomato:#EE7A61; --tomato-soft:#3B2019; --ok:#74D19C; --limit:#E8B25A;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); --backdrop:rgba(0,0,0,.65);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1612; --surface:#17211B; --surface-2:#1F2C24; --ink:#E7EFE9; --muted:#9DB0A3; --line:#2C3B31;
+  --accent:#73C293; --accent-soft:#1F3829; --accent-ink:#0C1A11;
+  --sun:#F0B65A; --sun-soft:#3A2D14; --sun-ink:#F6D49A;
+  --tomato:#EE7A61; --tomato-soft:#3B2019; --ok:#74D19C; --limit:#E8B25A;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.35); --backdrop:rgba(0,0,0,.65);
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--surface)}
+h1,h2,h3{font-family:var(--f-display);line-height:1.1;text-wrap:balance;margin:0;letter-spacing:-.01em}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Top bar */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;padding-block:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:800;font-size:1.2rem;text-decoration:none;color:var(--ink);margin-right:auto}
+.brand svg{width:34px;height:34px;flex:none}
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:999px}
+.tab{border:0;background:transparent;padding:8px 16px;border-radius:999px;cursor:pointer;font-weight:600;font-size:.95rem;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* Hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:36px;align-items:center;padding-block:36px 28px}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.hero h1{font-size:clamp(2.1rem,4.6vw,3.6rem);font-weight:800;margin-top:10px}
+.hero h1 em{font-style:normal;color:var(--accent)}
+.lede{color:var(--muted);font-size:1.08rem;max-width:52ch;margin:14px 0 20px}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px}
+.hero-img{border-radius:24px;overflow:hidden;box-shadow:var(--shadow);aspect-ratio:1400/620;max-width:100%}
+.hero-img img{width:100%;height:100%;object-fit:cover;display:block}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:11px 20px;font-weight:700;cursor:pointer;text-decoration:none;font-size:.98rem}
+.btn-primary{background:var(--accent);color:var(--accent-ink)}
+.btn-primary:hover{filter:brightness(1.07)}
+.btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--accent)}
+.btn-sm{padding:7px 14px;font-size:.88rem}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:310px minmax(0,1fr);gap:28px;align-items:start;padding-block:8px 48px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);position:sticky;top:calc(env(safe-area-inset-top,0px) + 78px);max-height:calc(100vh - 100px);overflow:auto}
+.panel summary{list-style:none;cursor:pointer;padding:18px 18px 6px;display:flex;align-items:center;gap:10px}
+.panel summary::-webkit-details-marker{display:none}
+.panel summary h2{font-size:1.15rem}
+.count-pill{margin-left:auto;background:var(--sun-soft);color:var(--sun-ink);font-weight:700;font-size:.8rem;padding:3px 10px;border-radius:999px}
+.panel-body{padding:4px 18px 18px;display:grid;gap:16px}
+.panel-intro{font-size:.9rem;color:var(--muted);margin:0}
+.group-title{font-size:.74rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.opt{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;padding:9px 10px;border-radius:12px;cursor:pointer;border:1px solid transparent}
+.opt:hover{background:var(--surface-2)}
+.opt input{width:19px;height:19px;margin:2px 0 0;accent-color:var(--tomato);cursor:pointer}
+.opt b{display:block;font-weight:650;font-size:.96rem}
+.opt span{display:block;font-size:.82rem;color:var(--muted);line-height:1.35}
+.opt:has(input:checked){background:var(--tomato-soft);border-color:color-mix(in srgb,var(--tomato) 35%,transparent)}
+.quick{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Toolbar */
+.toolbar{display:grid;gap:12px;margin-bottom:18px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row-label{font-size:.8rem;font-weight:700;color:var(--muted);min-width:78px}
+.chip{border:1px solid var(--line);background:var(--surface);padding:7px 14px;border-radius:999px;cursor:pointer;font-weight:600;font-size:.9rem;display:inline-flex;gap:6px;align-items:center}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.search{flex:1 1 220px;min-width:0;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:0 14px}
+.search input{border:0;background:transparent;padding:10px 0;font:inherit;color:var(--ink);width:100%;min-width:0;outline:none}
+.search:focus-within{border-color:var(--accent)}
+.result-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin:6px 0 14px}
+.result-head h2{font-size:1.4rem}
+.hidden-note{font-size:.88rem;color:var(--muted);margin:2px 0 0}
+
+/* Cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0;transition:transform .18s ease,box-shadow .18s ease;position:relative}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.card img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--surface-2)}
+.card-body{padding:14px 16px 16px;display:grid;gap:8px;flex:1;align-content:start}
+.card h3{font-size:1.12rem;font-weight:700}
+.card p{margin:0;font-size:.9rem;color:var(--muted);line-height:1.4}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.8rem;color:var(--muted)}
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--surface-2);font-size:.76rem;font-weight:650;color:var(--ink)}
+.tag.swap{background:var(--sun-soft);color:var(--sun-ink)}
+.fav{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.92);display:grid;place-items:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.fav svg{width:20px;height:20px;fill:none;stroke:#C2452D;stroke-width:2}
+.fav[aria-pressed="true"] svg{fill:#C2452D}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:32px;text-align:center;color:var(--muted)}
+
+/* Dialog */
+dialog{border:0;padding:0;border-radius:22px;width:min(900px,calc(100% - 24px));max-height:calc(100% - 32px);background:var(--surface);color:var(--ink);box-shadow:0 30px 80px rgba(0,0,0,.35)}
+dialog::backdrop{background:var(--backdrop)}
+.dlg-img{position:relative}
+.dlg-img img{width:100%;aspect-ratio:16/8;object-fit:cover;display:block}
+.dlg-close{position:absolute;top:12px;right:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.94);color:#16241B;font-size:1.4rem;cursor:pointer;display:grid;place-items:center}
+.dlg-body{padding:22px 26px 26px;display:grid;gap:18px}
+.dlg-body h2{font-size:clamp(1.6rem,3vw,2.2rem)}
+.dlg-cols{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:28px}
+.dlg-cols h3{font-size:1.05rem;margin-bottom:10px}
+.ing{list-style:none;padding:0;margin:0;display:grid;gap:2px}
+.ing li{padding:8px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.ing li.swapped{background:var(--sun-soft);border-radius:10px;padding:8px 10px;border-bottom-color:transparent;margin:2px 0}
+.ing del{color:var(--muted);font-size:.82rem;display:block}
+.ing .why{display:block;font-size:.76rem;font-weight:700;color:var(--sun-ink);letter-spacing:.02em}
+.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:12px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;font-size:.96rem}
+.steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:800;display:grid;place-items:center;font-size:.85rem;font-family:var(--f-display)}
+.tip{background:var(--accent-soft);border-radius:14px;padding:14px 16px;font-size:.93rem}
+.tip b{color:var(--accent)}
+.dlg-actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* Food list */
+.fl-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.85rem;color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.cat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+.cat h3{font-size:1.15rem;margin-bottom:12px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.col h4{margin:0 0 8px;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center}
+.col.ok h4{color:var(--ok)} .col.lite h4{color:var(--limit)} .col.unnga h4{color:var(--tomato)}
+.col.ok .dot{background:var(--ok)} .col.lite .dot{background:var(--limit)} .col.unnga .dot{background:var(--tomato)}
+.items{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.items li{padding:7px 10px;border-radius:10px;background:var(--surface-2);font-size:.9rem;line-height:1.3}
+.items li small{display:block;color:var(--muted);font-size:.78rem}
+.items li.mine{background:var(--tomato-soft);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tomato) 40%,transparent)}
+.items li.mine::after{content:"Gjelder deg";display:inline-block;margin-top:3px;font-size:.7rem;font-weight:700;color:var(--tomato)}
+.items li.none{background:transparent;color:var(--muted);font-style:italic;padding-left:0}
+
+/* Guide */
+.guide{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.gcard h3{font-size:1.2rem;margin-bottom:10px}
+.gcard p,.gcard li{font-size:.95rem;color:var(--ink)}
+.gcard ul{padding-left:18px;margin:8px 0 0}
+.gcard.wide{grid-column:1/-1}
+.phases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:12px}
+.phase{background:var(--surface-2);border-radius:14px;padding:16px}
+.phase b{font-family:var(--f-display);font-size:1.05rem;display:block;margin-bottom:4px}
+.phase small{color:var(--accent);font-weight:700;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+.note{background:var(--sun-soft);color:var(--ink);border-radius:var(--r);padding:16px 18px;font-size:.92rem}
+
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:.86rem}
+footer .wrap{padding-block:22px 34px}
+
+@media (max-width:960px){
+  .hero{grid-template-columns:1fr;gap:22px;padding-block:24px 18px}
+  .layout{grid-template-columns:1fr}
+  .panel{position:static;max-height:none}
+  .dlg-cols{grid-template-columns:1fr}
+  .guide{grid-template-columns:1fr}
+  .phases{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .cols{grid-template-columns:1fr}
+  .tabs{width:100%;justify-content:space-between}
+  .tab{flex:1;padding:8px 6px;font-size:.88rem}
+  .dlg-body{padding:18px}
+  .row-label{min-width:100%}
+}
+@media (prefers-reduced-motion:reduce){.card{transition:none}.card:hover{transform:none}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#oppskrifter" aria-label="Magevennlig kjøkken, til oppskriftene">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" fill="#2D6A48"/><path d="M11 22c0-6 4-11 9-11s9 5 9 11" fill="none" stroke="#F1F5EF" stroke-width="3" stroke-linecap="round"/><path d="M20 11c-1 4 1 7 4 8" fill="none" stroke="#E3A13A" stroke-width="3" stroke-linecap="round"/><path d="M10 24h20" stroke="#F1F5EF" stroke-width="3" stroke-linecap="round"/></svg>
+      Magevennlig kjøkken
+    </a>
+    <nav class="tabs" role="tablist" aria-label="Visning">
+      <button class="tab" role="tab" data-view="oppskrifter" aria-selected="true">Oppskrifter</button>
+      <button class="tab" role="tab" data-view="matliste" aria-selected="false">Matliste</button>
+      <button class="tab" role="tab" data-view="om" aria-selected="false">Slik fungerer det</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <div>
+      <div class="eyebrow">For deg med IBS · irritabel tarm</div>
+      <h1>Mat som er <em>snill mot magen</em></h1>
+      <p class="lede">Huk av det magen din ikke tåler. Oppskriftene tilpasser seg med en gang: løk blir til vårløk, vanlig yoghurt til laktosefri, og retter du ikke kan spise blir borte. Alt bygger på lav-FODMAP og middelhavskost, med vegetar og sjømat.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" id="suggestBtn" type="button">Gi meg et forslag</button>
+        <button class="btn btn-ghost" type="button" data-goto="matliste">Se hva jeg kan spise</button>
+      </div>
+    </div>
+    <div class="hero-img"><img id="heroImg" alt="Illustrasjon sett ovenfra: salade niçoise, shakshuka i panne og ovnsbakt laks på et bord"></div>
+  </section>
+
+  <div class="wrap layout">
+    <details class="panel" id="filterBox" open>
+      <summary><h2>Dette tåler jeg ikke</h2><span class="count-pill" id="countPill">0 valgt</span></summary>
+      <div class="panel-body">
+        <p class="panel-intro">Usikker? Start med alle fem FODMAP-gruppene i 2–6 uker, og test dem så én og én.</p>
+        <div class="quick">
+          <button class="btn btn-ghost btn-sm" type="button" id="strictBtn">Streng lav-FODMAP</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="resetBtn">Nullstill</button>
+        </div>
+        <div><p class="group-title">FODMAP-grupper</p><div id="fodOpts"></div></div>
+        <div><p class="group-title">Annet jeg unngår</p><div id="otherOpts"></div></div>
+      </div>
+    </details>
+
+    <div>
+      <section id="view-oppskrifter">
+        <div class="toolbar">
+          <div class="row"><span class="row-label">Kosthold</span><div class="row" id="dietChips"></div></div>
+          <div class="row"><span class="row-label">Måltid</span><div class="row" id="mealChips"></div></div>
+          <div class="row">
+            <label class="search" for="q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Søk, f.eks. laks, egg, pasta"></label>
+            <button class="chip" type="button" id="favChip" aria-pressed="false">♥ Favoritter</button>
+          </div>
+        </div>
+        <div class="result-head">
+          <div><h2 id="resultTitle">Oppskrifter</h2><p class="hidden-note" id="hiddenNote"></p></div>
+        </div>
+        <div class="grid" id="grid"></div>
+      </section>
+
+      <section id="view-matliste" hidden>
+        <div class="result-head"><div><h2>Hva kan jeg spise?</h2><p class="hidden-note">Basert på lav-FODMAP-forskning fra Monash University. Mengdene er omtrentlige porsjoner per måltid.</p></div></div>
+        <div class="fl-tools">
+          <label class="search" for="fq"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fq" type="search" placeholder="Søk i matvarer, f.eks. løk"></label>
+          <div class="legend"><span><i class="dot" style="background:var(--ok)"></i>Spis fritt</span><span><i class="dot" style="background:var(--limit)"></i>Små porsjoner</span><span><i class="dot" style="background:var(--tomato)"></i>Unngå i starten</span></div>
+        </div>
+        <div id="foodList"></div>
+      </section>
+
+      <section id="view-om" hidden>
+        <div class="guide">
+          <div class="gcard wide">
+            <div class="eyebrow">Lav-FODMAP på tre steg</div>
+            <h3 style="margin-top:8px">FODMAP er karbohydrater som gjærer i tarmen</h3>
+            <p>Hos mange med IBS gir de luft, oppblåsthet, smerter og endret avføring. Målet er ikke å kutte dem for alltid, men å finne ut hvilke akkurat du reagerer på.</p>
+            <div class="phases">
+              <div class="phase"><small>Steg 1 · 2–6 uker</small><b>Eliminer</b>Kutt alle fem gruppene. Trykk «Streng lav-FODMAP» i panelet, så får du bare oppskrifter som passer.</div>
+              <div class="phase"><small>Steg 2 · 6–8 uker</small><b>Test én og én</b>Spis én gruppe i økende mengde over tre dager, for eksempel hvitløk. Ta pause mellom hver test.</div>
+              <div class="phase"><small>Steg 3 · resten av livet</small><b>Tilpass</b>Fjern hakene for det du tålte. Behold bare det som faktisk gir plager, så kostholdet blir så variert som mulig.</div>
+            </div>
+          </div>
+          <div class="gcard">
+            <h3>Hvorfor middelhav, vegetar og sjømat?</h3>
+            <ul>
+              <li><b>Sjømat</b> inneholder ingen FODMAP og gir omega-3 og protein. Laks, makrell, torsk og reker er trygge valg.</li>
+              <li><b>Middelhavskost</b> bygger på olivenolje, grønnsaker, fisk, oliven og urter. Bytt ut løk og hvitløk med vårløk og hvitløksolje, så passer det godt.</li>
+              <li><b>Vegetar</b> krever litt omtanke, fordi bønner og linser er rike på GOS. Bruk fast tofu, tempeh, egg og små porsjoner hermetiske, skylte kikerter og linser.</li>
+            </ul>
+          </div>
+          <div class="gcard">
+            <h3>Gode vaner for magen</h3>
+            <ul>
+              <li>Spis regelmessig, gjerne 4–5 mindre måltider.</li>
+              <li>Spis rolig og tygg godt.</li>
+              <li>Vær forsiktig med fet og friterert mat, sterk chili, mye kaffe, alkohol og kullsyre.</li>
+              <li>Øk fiber gradvis. Havre, chiafrø, linfrø, kiwi og poteter med skall er skånsomme kilder.</li>
+              <li>Før matdagbok i testfasen, så ser du mønstrene.</li>
+            </ul>
+          </div>
+          <div class="gcard">
+            <h3>Hvitløksolje: det beste trikset</h3>
+            <p>FODMAP-ene i hvitløk og løk løser seg i vann, ikke i fett. Olje der hvitløk har trukket gir derfor smaken uten plagene. Kjøp ferdig eller lag selv: varm opp olivenolje med knuste fedd i 5 minutter, sil godt og bruk oljen samme dag.</p>
+          </div>
+          <div class="gcard">
+            <h3>Les mer</h3>
+            <ul>
+              <li><a href="https://www.monashfodmap.com" target="_blank" rel="noopener">Monash FODMAP</a> har en app som viser trygge mengder for tusenvis av matvarer.</li>
+              <li><a href="https://www.helsenorge.no" target="_blank" rel="noopener">Helsenorge.no</a> har informasjon om irritabel tarm. Søk på «irritabel tarm».</li>
+            </ul>
+          </div>
+          <div class="note gcard wide"><b>Viktig:</b> Appen gir generelle råd og erstatter ikke lege eller ernæringsfysiolog. Få magen undersøkt hos fastlegen før du legger om kostholdet, så andre sykdommer som cøliaki blir utelukket. Ikke gå på streng lav-FODMAP i mer enn noen uker uten veiledning.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer><div class="wrap">Magevennlig kjøkken gir generelle kostråd ved IBS, ikke medisinsk behandling. FODMAP-mengdene bygger på Monash University sine data og er omtrentlige. Illustrasjonene er tegnet for appen.</div></footer>
+
+<dialog id="dlg" aria-labelledby="dlgTitle"></dialog>
+
+<script>
+/* ---------- Data ---------- */
+const GROUPS=[
+ {id:'fruktan',name:'Fruktaner',ex:'Hvete, rug, løk, hvitløk, hvit del av purre',fod:1},
+ {id:'gos',name:'GOS (belgfrukter)',ex:'Bønner, linser, kikerter, cashew',fod:1},
+ {id:'laktose',name:'Laktose',ex:'Melk, yoghurt, rømme, fløte, myk ost',fod:1},
+ {id:'fruktose',name:'Fruktose (overskudd)',ex:'Honning, eple, pære, mango',fod:1},
+ {id:'polyol',name:'Polyoler',ex:'Sopp, blomkål, avokado, steinfrukt, sukkerfri tyggis',fod:1},
+ {id:'gluten',name:'Gluten',ex:'Ved cøliaki eller glutenintoleranse'},
+ {id:'egg',name:'Egg',ex:'Allergi eller plager'},
+ {id:'notter',name:'Nøtter og peanøtter',ex:'Allergi eller plager'},
+ {id:'fisk',name:'Fisk',ex:'Allergi eller smak'},
+ {id:'skalldyr',name:'Skalldyr',ex:'Reker, krabbe, skjell'},
+ {id:'sterkt',name:'Sterk mat og chili',ex:'Kan irritere tarmen'}
+];
+const GNAME=Object.fromEntries(GROUPS.map(g=>[g.id,g.name]));
+const DIETS=[['alle','Alle'],['middelhav','Middelhav'],['vegetar','Vegetar'],['sjomat','Sjømat']];
+const MEALS=[['alle','Alle'],['frokost','Frokost'],['lunsj','Lunsj'],['middag','Middag'],['mellom','Mellommåltid']];
+const MEALNAME={frokost:'Frokost',lunsj:'Lunsj',middag:'Middag',mellom:'Mellommåltid'};
+const DIETNAME={middelhav:'Middelhav',vegetar:'Vegetar',sjomat:'Sjømat'};
+
+// Ingredient: string, or {t:text, g:'tag tag', s:swap}
+const R=[
+{id:'laks',name:'Ovnsbakt laks med sitron og dill',desc:'Saftig laks, småpoteter og grønne bønner på ett brett.',meal:'middag',diets:['sjomat','middelhav'],time:35,serv:4,
+ ingr:[{t:'600 g laksefilet',g:'fisk'},'800 g småpoteter','300 g grønne bønner','1 sitron','3 ss olivenolje',{t:'2 fedd hvitløk, finhakket',g:'fruktan',s:'2 ss hvitløksolje i stedet for hvitløk og olivenolje'},'1 bunt fersk dill','Salt og pepper'],
+ steps:['Sett ovnen på 200 °C.','Del potetene i to, vend dem i litt olje og salt, og stek dem i 15 minutter.','Legg laksen og bønnene på brettet ved siden av potetene. Drypp over olje og hvitløk, og legg sitronskiver på laksen.','Stek i 12–15 minutter til laksen er akkurat gjennomstekt. Strø over dill før servering.'],
+ tip:'Grønne bønner er lav-FODMAP opp til ca. 75 g per person. Laks er fet fisk, så hold porsjonen moderat hvis fet mat gir deg plager.',
+ art:{table:'linen',v:'plate',cut:1,items:[['potato',6,-.42,.22,.32,{md:.2}],['greenbean',9,-.22,-.45,.28],['salmon',1,.3,.06,0,{rot:-.25}],['lemonSlice',2,.42,-.42,.1,{md:.25}],['dill',1,.3,.02,.3],['herb',1,-.42,.22,.32]]}},
+
+{id:'torsk',name:'Torsk i tomatsaus med oliven',desc:'Middelhavsgryte med kapers, paprika og basilikum.',meal:'middag',diets:['sjomat','middelhav'],time:30,serv:4,
+ ingr:[{t:'600 g torskefilet',g:'fisk'},'1 boks hakkede tomater (400 g)',{t:'1 løk, hakket',g:'fruktan',s:'Det grønne av 4 vårløk, i ringer'},{t:'2 fedd hvitløk',g:'fruktan',s:'2 ss hvitløksolje'},'1 rød paprika i strimler','12 svarte oliven','1 ss kapers','2 ss olivenolje','Frisk basilikum','Ris eller kokte poteter til servering'],
+ steps:['Fres løk og paprika i olje i en vid panne i 5 minutter. Tilsett hvitløk det siste minuttet.','Hell i tomatene og la sausen småkoke i 10 minutter. Smak til med salt og pepper.','Legg torskestykkene i sausen, strø over oliven og kapers, og legg på lokk.','La det trekke på svak varme i 8–10 minutter til fisken flaker seg. Server med basilikum og ris eller poteter.'],
+ tip:'Hermetiske tomater er trygge i vanlige porsjoner. Rød paprika tåles best i mengder rundt en halv paprika per person.',
+ art:{table:'stone',v:'pan',items:[['sauce',1,0,0,.8,{c:'#C23B26'}],['pepperStrip',6,0,0,.62,{c:'#E4572E'}],['fishWhite',2,0,0,.3,{md:.5}],['olive',10,0,0,.7],['caper',10,0,0,.65],['basil',4,0,0,.6]]}},
+
+{id:'reker',name:'Ingefærreker med ris og pak choi',desc:'Rask wok med ingefær, gulrot og vårløk.',meal:'middag',diets:['sjomat'],time:20,serv:2,
+ ingr:[{t:'300 g pillede reker',g:'skalldyr'},'2 hoder pak choi','1 gulrot i tynne strimler','2 cm fersk ingefær, revet','Det grønne av 3 vårløk',{t:'2 ss soyasaus',g:'gluten',s:'2 ss glutenfri tamari'},'1 ss sesamolje',{t:'½ rød chili',g:'sterkt',s:'Dropp chilien, bruk litt ekstra ingefær'},'2 porsjoner jasminris'],
+ steps:['Kok risen etter anvisningen på pakken.','Varm sesamolje i en wok. Stek gulrot og pak choi på høy varme i 2–3 minutter.','Tilsett ingefær, chili og reker, og stek i 1–2 minutter til rekene er varme.','Vend inn soyasaus og vårløk. Server rett over risen.'],
+ tip:'Vanlig soyasaus er lav-FODMAP i små mengder, selv om den inneholder hvete. Ved cøliaki trenger du likevel glutenfri tamari.',
+ art:{table:'wood',v:'bowl',col:'#2D3E4F',items:[['rice',1,-.15,.12,.62],['bokchoy',3,.38,.18,.25,{md:.3}],['carrotStrip',12,.15,-.38,.25],['shrimp',7,0,-.05,.36,{md:.18}],['scallion',14,0,0,.55],['chiliRing',5,.05,.05,.45]]}},
+
+{id:'fiskesuppe',name:'Kremet fiskesuppe',desc:'Norsk klassiker med gulrot, purre og gressløk.',meal:'middag',diets:['sjomat'],time:35,serv:4,
+ ingr:[{t:'500 g torsk eller sei',g:'fisk'},{t:'150 g reker',g:'skalldyr',s:'150 g mer fisk'},'2 gulrøtter i skiver','3 mellomstore poteter i terninger','Det grønne av 1 purre',{t:'1 liter fiskekraft av terning',g:'fruktan',s:'1 liter fiskekraft uten løk og hvitløk (sjekk etiketten)'},{t:'3 dl matfløte',g:'laktose',s:'3 dl laktosefri matfløte'},'1 ss smør','Gressløk til servering'],
+ steps:['Fres purre og gulrot i smør i en gryte i 3 minutter.','Tilsett kraft og poteter, og kok i 12 minutter til potetene er møre.','Rør inn fløten og la suppen bli varm igjen. Ikke la den koke kraftig.','Legg fisken i biter i suppen og la den trekke i 4–5 minutter. Tilsett rekene til slutt. Strø over gressløk.'],
+ tip:'Den grønne delen av purre er lav-FODMAP, den hvite delen er det ikke. De fleste buljongterninger inneholder løk, så les etiketten.',
+ art:{table:'linen',v:'bowl',col:'#E9E2D4',items:[['soup',1,0,0,.86,{c:'#F1E1BF'}],['fishChunk',5,0,0,.5,{md:.25}],['carrotRound',9,0,0,.62],['shrimp',4,0,0,.5,{s:.8}],['scallion',14,0,0,.6,{s:1.2}],['herb',1,0,0,.55]]}},
+
+{id:'gresk',name:'Gresk salat med feta',desc:'Tomat, agurk, oliven og feta med oregano.',meal:'lunsj',diets:['vegetar','middelhav'],time:10,serv:2,
+ ingr:['3 tomater i båter','½ agurk','½ grønn paprika',{t:'½ rødløk i tynne ringer',g:'fruktan',s:'En god neve gressløk eller grønne vårløkringer'},'80 g feta','10 kalamataoliven','2 ss olivenolje','1 ts tørket oregano',{t:'2 skiver surdeigsbrød av spelt',g:'gluten',s:'2 skiver glutenfritt brød'}],
+ steps:['Skjær tomat, agurk og paprika i store biter og legg dem i en skål.','Strø over løk eller gressløk og oliven.','Legg feta på toppen, drypp over olivenolje og dryss over oregano.','Server med brød ved siden av.'],
+ tip:'Feta tåles godt i mengder rundt 40 g per person. Ekte surdeigsbrød av spelt er lav-FODMAP fordi gjæringen bryter ned fruktanene.',
+ art:{table:'blue',v:'bowl',col:'#F3F1EA',items:[['tomatoChunk',9,0,0,.62],['cucumber',8,0,0,.62],['pepperStrip',5,0,0,.6,{c:'#5DA13A'}],['olive',9,0,0,.6],['feta',8,0,0,.5],['scallion',8,0,0,.6],['herb',1,0,0,.6]]}},
+
+{id:'shakshuka',name:'Shakshuka',desc:'Egg bakt i krydret tomatsaus med paprika.',meal:'frokost',diets:['vegetar','middelhav'],time:25,serv:2,
+ ingr:[{t:'4 egg',g:'egg'},'1 boks hakkede tomater','1 rød paprika i strimler',{t:'1 løk, hakket',g:'fruktan',s:'Det grønne av 3 vårløk'},{t:'1 fedd hvitløk',g:'fruktan',s:'1 ss hvitløksolje'},'1 ts malt spisskummen','1 ts paprikapulver',{t:'½ ts chiliflak',g:'sterkt',s:'Sløyf chilien'},'40 g feta','Frisk persille',{t:'Surdeigsbrød av spelt',g:'gluten',s:'Glutenfritt brød'}],
+ steps:['Fres løk og paprika i olje i en panne i 5 minutter. Tilsett hvitløk og krydder, og stek i ett minutt til.','Hell i tomatene og la sausen småkoke i 8 minutter.','Lag fire groper i sausen og knekk et egg i hver. Legg på lokk.','La det steke på svak varme i 6–8 minutter til eggehviten har stivnet. Strø over feta og persille.'],
+ tip:'Spisskummen og paprikapulver gir mye smak uten FODMAP, og kan erstatte løken når den er byttet ut.',
+ art:{table:'stone',v:'pan',items:[['sauce',1,0,0,.84,{c:'#C8402A'}],['pepperStrip',6,0,0,.68,{c:'#E0592E'}],['eggFried',4,0,0,.42,{md:.5}],['feta',6,0,0,.62,{s:.6}],['herb',1,0,0,.7]]}},
+
+{id:'quinoa',name:'Quinoasalat med ovnsbakte grønnsaker',desc:'Mettende matboks med squash, aubergine og feta.',meal:'lunsj',diets:['vegetar','middelhav'],time:35,serv:4,
+ ingr:['2 dl quinoa','1 squash','1 liten aubergine','1 rød paprika','2 gulrøtter','100 g feta','2 ss gresskarkjerner','En neve ruccola','3 ss olivenolje','Saft av 1 sitron',{t:'1 ss honning i dressingen',g:'fruktose',s:'1 ss lønnesirup'}],
+ steps:['Sett ovnen på 220 °C. Skjær grønnsakene i biter, vend dem i 2 ss olje og salt, og stek dem i 25 minutter.','Kok quinoaen i 4 dl lettsaltet vann i 15 minutter, og la den dampe av.','Visp sammen resten av oljen, sitronsaft og honning eller lønnesirup.','Bland quinoa, grønnsaker og ruccola med dressingen. Topp med feta og gresskarkjerner.'],
+ tip:'Squash er lav-FODMAP opp til ca. 65 g per porsjon. Salaten holder seg i kjøleskapet i 3 dager.',
+ art:{table:'sage',v:'bowl',col:'#EFEBE3',items:[['quinoa',1,0,0,.8],['leaf',6,-.32,-.3,.3,{c:'#4F8F3A',s:.7}],['zucchini',5,.32,-.22,.3],['aubergine',5,.32,.32,.28],['pepperStrip',4,-.32,.32,.28],['carrotRound',5,-.05,.42,.28],['feta',6,0,0,.5],['seed',16,0,0,.6]]}},
+
+{id:'pasta',name:'Pasta pomodoro med parmesan',desc:'Enkel tomatpasta med basilikum.',meal:'middag',diets:['vegetar','middelhav'],time:20,serv:4,
+ ingr:[{t:'400 g pasta',g:'fruktan gluten',s:'400 g glutenfri pasta'},'1 boks hakkede tomater','250 g cherrytomater',{t:'2 fedd hvitløk',g:'fruktan',s:'3 ss hvitløksolje'},'3 ss olivenolje','Frisk basilikum','50 g parmesan, revet'],
+ steps:['Kok pastaen i godt saltet vann.','Fres hvitløken lett i olje. Tilsett hakkede tomater og halverte cherrytomater, og la sausen putre i 10 minutter.','Vend den avrente pastaen inn i sausen med litt av kokevannet.','Server med basilikum og parmesan.'],
+ tip:'Parmesan er nesten laktosefri fordi den er lagret lenge. Vanlig pasta tåles av mange i små porsjoner (ca. 75 g kokt), men glutenfri pasta er tryggest i starten.',
+ art:{table:'linen',v:'plate',cut:1,items:[['pasta',1,0,0,.62],['sauce',1,0,0,.34,{c:'#C8402A'}],['cherryHalf',6,0,0,.5,{md:.18}],['basil',4,0,0,.42],['parmesan',9,0,0,.45]]}},
+
+{id:'curry',name:'Kikertcurry med spinat',desc:'Mild kokoscurry med ingefær og koriander.',meal:'middag',diets:['vegetar'],time:30,serv:4,
+ ingr:[{t:'1 boks kikerter, skylt (maks ca. 40 g per porsjon)',g:'gos',s:'300 g fast tofu i terninger'},'1 boks kokosmelk (400 ml)','1 boks hakkede tomater',{t:'1 løk, hakket',g:'fruktan',s:'Det grønne av 4 vårløk'},{t:'2 fedd hvitløk',g:'fruktan',s:'2 ss hvitløksolje'},{t:'2 ss karripasta',g:'fruktan',s:'1 ss karripulver og 1 ts gurkemeie (karripasta inneholder ofte hvitløk)'},'1 ss revet ingefær','100 g babyspinat',{t:'½ rød chili',g:'sterkt',s:'Sløyf chilien'},'Basmatiris og koriander'],
+ steps:['Fres løk, hvitløk og ingefær i olje i 3 minutter. Rør inn karripasta eller krydder.','Tilsett tomater og kokosmelk, og la det småkoke i 10 minutter.','Ha i kikerter eller tofu, og la det bli godt varmt.','Vend inn spinaten til slutt. Server med ris og koriander.'],
+ tip:'Hermetiske kikerter har mye mindre GOS enn tørkede, fordi noe lekker ut i vannet. Skyll dem godt og hold deg til en liten porsjon.',
+ art:{table:'wood',v:'bowl',col:'#33465A',items:[['sauce',1,0,0,.84,{c:'#E0A03A'}],['chickpea',20,0,0,.6,{md:.1}],['spinach',5,0,0,.6],['tomatoChunk',4,0,0,.6,{s:.6}],['herb',1,0,0,.6]]}},
+
+{id:'oats',name:'Overnight oats med blåbær',desc:'Ferdig frokost når du våkner.',meal:'frokost',diets:['vegetar'],time:5,serv:1,
+ ingr:[{t:'40 g havregryn',g:'gluten',s:'40 g glutenfri havre'},{t:'1 dl gresk yoghurt',g:'laktose',s:'1 dl laktosefri yoghurt'},{t:'½ dl melk',g:'laktose',s:'½ dl laktosefri melk eller mandelmelk'},'1 ss chiafrø','1 dl blåbær',{t:'1 ts honning',g:'fruktose',s:'1 ts lønnesirup'},{t:'1 ss hakkede valnøtter',g:'notter',s:'1 ss gresskarkjerner'}],
+ steps:['Rør sammen havregryn, yoghurt, melk, chiafrø og honning eller lønnesirup i et glass.','Sett glasset i kjøleskapet over natten.','Topp med blåbær og nøtter rett før du spiser.'],
+ tip:'Havre er lav-FODMAP opp til ca. 50 g. Chiafrø og havre gir løselig fiber, som ofte er skånsomt for en sensitiv mage.',
+ art:{table:'sage',v:'jar',items:[['oats',1,0,0,.66],['blueberry',16,0,0,.48],['nut',5,0,0,.42],['chia',1,0,0,.6]]}},
+
+{id:'omelett',name:'Spinatomelett med cheddar',desc:'Ti minutter fra panne til tallerken.',meal:'frokost',diets:['vegetar'],time:10,serv:1,
+ ingr:[{t:'3 egg',g:'egg'},'En neve babyspinat','5 cherrytomater','30 g revet cheddar','1 ss smør eller olivenolje','Gressløk, salt og pepper'],
+ steps:['Visp eggene med salt og pepper.','Smelt smøret i en panne på middels varme og hell i eggene.','Når eggene nesten har stivnet, legger du spinat og ost på den ene halvdelen.','Brett omeletten og server med cherrytomater og gressløk.'],
+ tip:'Hard ost som cheddar, Norvegia og Jarlsberg har nesten ikke laktose, og passer selv om du reagerer på melk.',
+ art:{table:'blue',v:'plate',cut:1,items:[['omelette',1,-.08,-.02,0,{rot:-.2}],['cherryHalf',4,.45,-.35,.16,{md:.15}],['spinach',3,.42,.38,.18],['scallion',10,-.08,-.1,.38,{s:.6}]]}},
+
+{id:'kylling',name:'Kyllingspyd med sitron og tzatziki',desc:'Gresk grillmat med ris og kjølig dipp.',meal:'middag',diets:['middelhav'],time:40,serv:4,
+ ingr:['600 g kyllingfilet i terninger','Saft av 1 sitron','2 ss olivenolje','2 ts tørket oregano',{t:'1 fedd hvitløk i marinaden',g:'fruktan',s:'1 ss hvitløksolje'},'1 squash og 1 rød paprika i biter',{t:'3 dl gresk yoghurt til tzatziki',g:'laktose',s:'3 dl laktosefri yoghurt'},'½ agurk, revet og avrent','Frisk mynte eller dill','Ris til servering'],
+ steps:['Bland kyllingen med sitron, olje, oregano og hvitløk. La den trekke i minst 15 minutter.','Træ kylling og grønnsaker vekselvis på spyd.','Grill eller stek spydene i ovnen på 220 °C i 15–18 minutter, og snu dem underveis.','Rør yoghurt, agurk, salt og mynte sammen til tzatziki. Server med ris.'],
+ tip:'Kylling har ingen FODMAP i seg selv. Det er marinader og ferdigkrydder som ofte inneholder løk og hvitløk.',
+ art:{table:'wood',v:'plate',cut:1,items:[['rice',1,-.45,.05,.36],['skewer',1,.18,-.2,0,{rot:-.5}],['skewer',1,.25,.18,0,{rot:-.5}],['dollop',1,.35,.58,0],['lemonWedge',1,-.3,-.58,0,{rot:.3}],['herb',1,-.45,.05,.34]]}},
+
+{id:'makrell',name:'Stekt makrell med potetsalat',desc:'Sennepsdressing, dill og sprø reddiker.',meal:'middag',diets:['sjomat'],time:30,serv:4,
+ ingr:[{t:'4 makrellfileter',g:'fisk'},'800 g kokte, avkjølte poteter','6 reddiker i skiver','3 ss olivenolje','1 ss eplecidereddik','1 ts dijonsennep','Gressløk og dill','1 sitron'],
+ steps:['Skjær potetene i biter. Visp olje, eddik og sennep sammen, og vend potetene i dressingen med gressløk og dill.','Krydre makrellen med salt og pepper.','Stek fileteene med skinnsiden ned i en varm panne i 3–4 minutter, snu og stek i ett minutt til.','Server med potetsalat, reddiker og sitronbåter.'],
+ tip:'Avkjølte poteter inneholder resistent stivelse, som er godt for tarmfloraen og tåles godt av de fleste.',
+ art:{table:'stone',v:'plate',cut:1,items:[['potato',7,-.38,.3,.32,{md:.2}],['dill',1,-.38,.3,.32],['mackerel',1,.2,-.28,0,{rot:-.35}],['mackerel',1,.28,.12,0,{rot:-.35}],['radish',5,.3,.55,.16],['lemonWedge',1,-.42,-.42,0,{rot:.6}]]}},
+
+{id:'tofubowl',name:'Tofubowl med peanøttsaus',desc:'Fargerik bolle med ris, rødkål og sesam.',meal:'middag',diets:['vegetar'],time:25,serv:2,
+ ingr:['300 g fast tofu i terninger','2 porsjoner ris','1 gulrot i strimler','½ agurk','150 g rødkål, finstrimlet',{t:'2 ss peanøttsmør',g:'notter',s:'2 ss tahini (sesampasta)'},{t:'1 ss soyasaus',g:'gluten',s:'1 ss glutenfri tamari'},'1 ss limesaft','1 ts lønnesirup','Sesamfrø og det grønne av vårløk'],
+ steps:['Kok risen. Stek tofuen gyllen i litt olje.','Rør peanøttsmør, soyasaus, lime, lønnesirup og 2–3 ss varmt vann sammen til en saus.','Fordel ris, tofu og grønnsakene i boller.','Drypp over sausen og strø over sesam og vårløk.'],
+ tip:'Velg fast tofu. Silketofu er laget av hele soyabønner og har mye mer GOS.',
+ art:{table:'linen',v:'bowl',col:'#E7E2D8',items:[['rice',1,0,0,.36],['tofu',6,-.46,-.16,.22,{md:.15}],['carrotStrip',12,.36,-.36,.22],['cucumber',5,.46,.22,.2,{s:.7}],['redcabbage',16,-.22,.46,.22],['drizzle',1,0,0,.45],['sesame',1,0,0,.6],['scallion',8,0,0,.5]]}},
+
+{id:'smorbrod',name:'Rekesmørbrød på surdeig',desc:'Lunsjklassiker med egg, majones og dill.',meal:'lunsj',diets:['sjomat'],time:10,serv:2,
+ ingr:[{t:'2 skiver surdeigsbrød av spelt',g:'gluten',s:'2 skiver glutenfritt brød'},{t:'200 g reker',g:'skalldyr'},{t:'2 kokte egg i skiver',g:'egg',s:'Agurkskiver og ekstra salat'},'2 ss majones','Salatblader','Sitron og dill'],
+ steps:['Smør majones på brødskivene.','Legg på salat og eggeskiver.','Topp med rikelig med reker.','Pynt med dill og server med en sitronbåt.'],
+ tip:'Vanlig majones er lav-FODMAP. Ferdige rekesalater kan inneholde løk, så lag heller din egen.',
+ art:{table:'blue',v:'board',items:[['bread',1,-.62,0,0,{rot:.06}],['bread',1,.62,.02,0,{rot:-.05}],['leaf',3,-.62,0,.2,{c:'#86C04F',s:.8}],['leaf',3,.62,0,.2,{c:'#86C04F',s:.8}],['eggSlice',3,-.62,.12,.18,{md:.18}],['eggSlice',3,.62,.12,.18,{md:.18}],['shrimp',7,-.62,-.05,.22,{s:.75}],['shrimp',7,.62,-.05,.22,{s:.75}],['dill',1,-.62,0,.25],['dill',1,.62,0,.25],['lemonWedge',1,0,.62,0,{rot:0,s:.8}]]}},
+
+{id:'smoothie',name:'Jordbær- og banansmoothie',desc:'Kremet mellommåltid med bær.',meal:'mellom',diets:['vegetar'],time:5,serv:1,
+ ingr:['1 fast banan (ikke overmoden)','1 dl jordbær (frosne går fint)',{t:'1,5 dl yoghurt naturell',g:'laktose',s:'1,5 dl laktosefri yoghurt'},{t:'1 dl melk',g:'laktose',s:'1 dl laktosefri melk eller mandelmelk'},{t:'1 ss peanøttsmør',g:'notter',s:'1 ss chiafrø'}],
+ steps:['Ha alt i en blender.','Kjør til smoothien er helt jevn.','Smak til, og tilsett litt mer melk hvis den er for tykk.'],
+ tip:'Fast, litt grønn banan er lav-FODMAP. Moden banan har mer fruktaner, så hold deg til en tredjedel av den.',
+ art:{table:'sage',v:'glass',items:[['smoothie',1,0,0,.68,{c:'#EE8FA3'}],['bananaSlice',3,0,0,.3,{md:.25}],['strawberryHalf',2,0,0,.3,{md:.3}],['chia',1,0,0,.5],['straw',1,0,0,0,{rot:-.6}],['strawberry',2,1.12,.55,.12,{md:.2}],['bananaSlice',2,-1.1,-.5,.1,{md:.15}]]}},
+
+{id:'ratatouille',name:'Ratatouille med kremet polenta',desc:'Provençalsk grønnsaksgryte på myk maisgrøt.',meal:'middag',diets:['vegetar','middelhav'],time:45,serv:4,
+ ingr:['1 aubergine','1 squash','1 rød paprika','4 tomater',{t:'1 løk',g:'fruktan',s:'Det grønne av 4 vårløk'},{t:'2 fedd hvitløk',g:'fruktan',s:'2 ss hvitløksolje'},'Timian, basilikum og olivenolje','2,5 dl polenta (maismel)','1 liter vann','30 g parmesan','1 ss smør'],
+ steps:['Skjær grønnsakene i terninger. Fres løk og hvitløk i olje, og tilsett aubergine, squash og paprika.','Ha i tomater og timian, og la gryta småkoke under lokk i 25 minutter.','Kok opp vannet med salt, og visp inn polentaen. La den koke i 5–10 minutter under omrøring.','Rør inn parmesan og smør i polentaen. Server med ratatouille og basilikum.'],
+ tip:'Polenta er laget av mais og er naturlig lav-FODMAP og glutenfri.',
+ art:{table:'linen',v:'plate',cut:1,items:[['polenta',1,0,0,.66],['aubergine',6,0,0,.38],['zucchini',6,0,0,.42],['pepperStrip',5,0,0,.38],['tomatoChunk',5,0,0,.38],['basil',3,0,0,.38],['parmesan',5,0,0,.55]]}},
+
+{id:'nicoise',name:'Salade niçoise med tunfisk',desc:'Fransk lunsjsalat med egg, poteter og oliven.',meal:'lunsj',diets:['sjomat','middelhav'],time:25,serv:2,
+ ingr:[{t:'1 boks tunfisk',g:'fisk'},{t:'2 egg',g:'egg',s:'Dropp eggene og ta litt flere poteter'},'6 småpoteter','150 g grønne bønner','8 cherrytomater','10 svarte oliven','Salatblader','2 ss olivenolje, saft av ½ sitron og 1 ts sennep'],
+ steps:['Kok potetene i 15 minutter og eggene i 8 minutter. Kok bønnene i 3 minutter på slutten.','Avkjøl alt i kaldt vann.','Legg salat på et fat og fordel poteter, bønner, tomater, oliven, tunfisk og eggehalvdeler.','Visp sammen dressingen og hell den over.'],
+ tip:'Salaten er like god dagen derpå. Ta dressingen i et eget glass hvis du tar den med i matboksen.',
+ art:{table:'blue',v:'plate',cut:1,items:[['leaf',8,0,0,.62,{c:'#86BE4E'}],['potato',5,-.42,.3,.22,{md:.2}],['greenbean',8,.36,.36,.22],['eggHalf',4,.32,-.38,.22,{md:.28}],['tuna',6,-.05,0,.22],['cherryHalf',5,-.42,-.3,.2],['olive',8,0,0,.55]]}},
+
+{id:'riskaker',name:'Riskaker med peanøttsmør og kiwi',desc:'Søtt og mettende når sulten kommer.',meal:'mellom',diets:['vegetar'],time:3,serv:1,
+ ingr:['3 riskaker',{t:'2 ss peanøttsmør',g:'notter',s:'3 skiver Norvegia eller annen hard ost'},'1 kiwi i skiver','Litt kanel'],
+ steps:['Smør peanøttsmør på riskakene.','Legg kiwiskiver på toppen.','Dryss over litt kanel.'],
+ tip:'Kiwi er lav-FODMAP og kan hjelpe på treg mage. To kiwi om dagen er vist å gi bedre avføring hos mange med forstoppelse.',
+ art:{table:'wood',v:'board',items:[['riceCake',1,-.78,0,0],['riceCake',1,0,.04,0],['riceCake',1,.78,-.02,0],['spread',1,-.78,0,0],['spread',1,0,.04,0],['spread',1,.78,-.02,0],['kiwi',1,-.74,.02,0,{s:.9}],['kiwi',1,.04,.06,0,{s:.9}],['kiwi',1,.82,0,0,{s:.9}],['kiwi',2,0,.68,.08,{md:.2,s:.8}]]}}
+];
+
+const FOOD=[
+ {name:'Grønnsaker',items:[
+  ['Gulrot','ok'],['Agurk','ok'],['Tomat','ok'],['Salat og ruccola','ok'],['Spinat','ok'],['Squash','ok','ca. 65 g'],['Aubergine','ok'],['Rød paprika','ok','ca. ½ paprika'],['Grønn paprika','ok'],['Potet','ok'],['Pastinakk','ok'],['Kålrot','ok'],['Pak choi','ok'],['Grønnkål','ok'],['Rødkål','ok','ca. 75 g'],['Grønne bønner','ok','ca. 75 g'],['Oliven','ok'],['Ingefær','ok'],['Gressløk','ok'],['Vårløk, grønn del','ok'],['Reddik','ok'],['Østerssopp','ok','den eneste soppen som er lav-FODMAP'],
+  ['Brokkoli','lite','hodene, ca. 75 g','fruktose'],['Søtpotet','lite','ca. 75 g','polyol'],['Avokado','lite','ca. 30 g','polyol'],['Mais','lite','ca. ½ kolbe','polyol'],['Stangselleri','lite','ca. 10 g','polyol'],['Rosenkål','lite','2 stk','fruktan'],
+  ['Løk (alle typer)','unnga','','fruktan'],['Hvitløk','unnga','','fruktan'],['Purre, hvit del','unnga','','fruktan'],['Sopp','unnga','','polyol'],['Blomkål','unnga','','polyol'],['Asparges','unnga','','fruktose'],['Artisjokk','unnga','','fruktan'],['Sukkererter','unnga','','polyol'],['Grønne erter','unnga','','gos']]},
+ {name:'Frukt og bær',items:[
+  ['Blåbær','ok'],['Jordbær','ok'],['Kiwi','ok'],['Appelsin','ok'],['Mandarin','ok'],['Ananas','ok'],['Druer','ok'],['Pasjonsfrukt','ok'],['Sitron og lime','ok'],['Fast banan','ok','ikke overmoden'],['Papaya','ok'],['Bringebær','ok','en neve'],
+  ['Moden banan','lite','⅓ banan','fruktan'],['Grapefrukt','lite','½ frukt','fruktan'],['Rosiner','lite','1 ss','fruktan'],
+  ['Eple','unnga','','fruktose'],['Pære','unnga','','fruktose'],['Mango','unnga','','fruktose'],['Vannmelon','unnga','','fruktose'],['Plomme, fersken og nektarin','unnga','','polyol'],['Kirsebær','unnga','','polyol'],['Tørket frukt (svisker, dadler, fiken)','unnga','','fruktan'],['Fruktjuice','unnga','','fruktose']]},
+ {name:'Korn og stivelse',items:[
+  ['Ris','ok'],['Havregryn','ok','ca. 50 g. Velg glutenfri ved cøliaki','gluten'],['Quinoa','ok'],['Glutenfri pasta og brød','ok'],['Polenta og maismel','ok'],['Bokhvete','ok'],['Hirse','ok'],['Risnudler','ok'],['Riskaker','ok'],['Surdeigsbrød av spelt','ok','ekte surdeig','gluten'],
+  ['Vanlig pasta','lite','ca. 75 g kokt','fruktan gluten'],['Couscous','lite','ca. 40 g kokt','fruktan gluten'],
+  ['Hvetebrød og loff','unnga','','fruktan gluten'],['Rugbrød og rugknekkebrød','unnga','','fruktan gluten'],['Bygg','unnga','','fruktan gluten']]},
+ {name:'Fisk, kjøtt og protein',items:[
+  ['Fisk (laks, torsk, sei, makrell, tunfisk)','ok','','fisk'],['Reker, krabbe og skjell','ok','','skalldyr'],['Egg','ok','','egg'],['Kylling og kalkun','ok'],['Storfe, svin og lam','ok','naturell, uten ferdigkrydder'],['Fast tofu','ok'],['Tempeh','ok'],['Edamame','ok','ca. 1 dl'],
+  ['Hermetiske linser, skylt','lite','ca. 45 g','gos'],['Hermetiske kikerter, skylt','lite','ca. 40 g','gos'],
+  ['Tørkede og kokte bønner','unnga','','gos'],['Bakte bønner','unnga','','gos'],['Hummus','unnga','','gos'],['Silketofu','unnga','','gos'],['Pølser og farse med løk','unnga','','fruktan']]},
+ {name:'Meieri',items:[
+  ['Laktosefri melk og yoghurt','ok'],['Hard ost (Norvegia, Jarlsberg, cheddar, parmesan)','ok'],['Mozzarella','ok'],['Feta','ok','ca. 40 g'],['Smør','ok'],['Mandelmelk','ok'],
+  ['Rømme og crème fraîche','lite','1–2 ss','laktose'],['Fløte','lite','ca. ½ dl','laktose'],['Cottage cheese','lite','2 ss','laktose'],['Havremelk','lite','ca. 1 dl','gos'],
+  ['Vanlig melk','unnga','','laktose'],['Vanlig yoghurt og kesam','unnga','','laktose'],['Brunost og prim','unnga','','laktose'],['Ricotta og kremost','unnga','','laktose'],['Iskrem','unnga','','laktose']]},
+ {name:'Nøtter og frø',items:[
+  ['Valnøtter','ok','','notter'],['Peanøtter og peanøttsmør','ok','','notter'],['Macadamia','ok','','notter'],['Pekannøtter','ok','','notter'],['Gresskarkjerner','ok'],['Solsikkekjerner','ok','2 ss'],['Chiafrø','ok'],['Linfrø','ok','1 ss'],['Sesamfrø og tahini','ok'],
+  ['Mandler','lite','10 stk','gos notter'],['Hasselnøtter','lite','10 stk','gos notter'],
+  ['Cashewnøtter','unnga','','gos notter'],['Pistasjnøtter','unnga','','gos notter']]},
+ {name:'Smak, søtt og drikke',items:[
+  ['Olivenolje','ok'],['Hvitløksolje','ok','gir hvitløkssmak uten FODMAP'],['Lønnesirup','ok'],['Sukker','ok','i moderate mengder'],['Soyasaus','ok','2 ss','gluten'],['Sennep og majones','ok'],['Friske og tørkede urter','ok'],['Mørk sjokolade','ok','ca. 30 g'],['Peppermyntete','ok'],['Grønn og svart te','ok','ikke for sterk'],
+  ['Kaffe','lite','1–2 kopper, kan irritere'],['Chili og sterke krydder','lite','kan irritere tarmen','sterkt'],['Kullsyreholdig drikke','lite','kan gi luft'],['Alkohol','lite','lite, helst vin fremfor øl'],['Melkesjokolade','lite','ca. 20 g','laktose'],
+  ['Honning','unnga','','fruktose'],['Agavesirup','unnga','','fruktose'],['Sukkerfri tyggis og pastiller','unnga','sorbitol, xylitol','polyol'],['Inulin og sikorirot','unnga','finnes i mange fiberbarer','fruktan'],['Kamillete','unnga','','fruktan'],['Buljong og kraft med løk','unnga','','fruktan']]}
+];
+
+/* ---------- State ---------- */
+const state={avoid:new Set(),diet:'alle',meal:'alle',q:'',favOnly:false,favs:new Set()};
+try{const s=JSON.parse(localStorage.getItem('mk-state')||'{}');(s.avoid||[]).forEach(a=>state.avoid.add(a));(s.favs||[]).forEach(f=>state.favs.add(f))}catch(e){}
+function save(){try{localStorage.setItem('mk-state',JSON.stringify({avoid:[...state.avoid],favs:[...state.favs]}))}catch(e){}}
+
+/* ---------- Illustrations ---------- */
+function rng(seed){let s=(seed>>>0)||1;return()=>{s^=s<<13;s>>>=0;s^=s>>>17;s^=s<<5;s>>>=0;return s/4294967296}}
+function hash(str){let h=2166136261;for(const ch of str){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)}return h>>>0}
+function circ(c,x,y,r,fill){c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=fill;c.fill()}
+function ell(c,x,y,rx,ry,rot,fill){c.beginPath();c.ellipse(x,y,rx,ry,rot,0,Math.PI*2);c.fillStyle=fill;c.fill()}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function blob(c,x,y,r,rnd,v=.15,n=14,sx=1,sy=1){const p=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,d=r*(1-v+rnd()*v*2);p.push([x+Math.cos(a)*d*sx,y+Math.sin(a)*d*sy])}
+ const mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];c.beginPath();let m=mid(p[0],p[1]);c.moveTo(m[0],m[1]);
+ for(let i=1;i<=n;i++){const a=p[i%n],b=p[(i+1)%n];m=mid(a,b);c.quadraticCurveTo(a[0],a[1],m[0],m[1])}c.closePath()}
+function inDisk(rnd,r){const a=rnd()*Math.PI*2,d=Math.sqrt(rnd())*r;return[Math.cos(a)*d,Math.sin(a)*d]}
+function leafPath(c,len,w){c.beginPath();c.moveTo(-len/2,0);c.quadraticCurveTo(0,-w,len/2,0);c.quadraticCurveTo(0,w,-len/2,0);c.closePath()}
+function shade(c,s){c.shadowColor='rgba(0,0,0,.22)';c.shadowBlur=s*.5;c.shadowOffsetY=s*.15}
+function ns(c){c.shadowColor='transparent';c.shadowBlur=0;c.shadowOffsetY=0}
+
+const TABLES={linen:['#E5E0D4','#D6CFBF'],wood:['#B7865A','#9E6E44'],stone:['#CBCFCA','#B3B8B2'],sage:['#BACAB2','#A6B99D'],blue:['#C8D5DE','#AFC2CF']};
+function drawTable(c,w,h,kind,rnd){const[a,b]=TABLES[kind]||TABLES.linen;c.fillStyle=a;c.fillRect(0,0,w,h);c.save();
+ if(kind==='wood'){c.strokeStyle=b;for(let y=0;y<h;y+=5+rnd()*9){c.lineWidth=1+rnd()*2;c.globalAlpha=.3+rnd()*.4;c.beginPath();c.moveTo(0,y);for(let x=0;x<=w;x+=40)c.lineTo(x,y+Math.sin(x/110+y)*3);c.stroke()}
+  c.globalAlpha=.3;c.fillStyle='#6E4626';for(let x=w/5;x<w;x+=w/5+rnd()*30)c.fillRect(x,0,2,h)}
+ else if(kind==='linen'){c.strokeStyle=b;c.lineWidth=1;c.globalAlpha=.32;for(let i=0;i<w;i+=3){c.beginPath();c.moveTo(i,0);c.lineTo(i,h);c.stroke()}for(let j=0;j<h;j+=3){c.beginPath();c.moveTo(0,j);c.lineTo(w,j);c.stroke()}}
+ else if(kind==='blue'){c.fillStyle=b;c.globalAlpha=.45;const g=34;for(let x=0;x<w;x+=g*2)c.fillRect(x,0,g,h);for(let y=0;y<h;y+=g*2)c.fillRect(0,y,w,g)}
+ else{for(let i=0;i<w*h/180;i++){c.globalAlpha=.15+rnd()*.3;c.fillStyle=rnd()<.5?b:'#FFFFFF';c.fillRect(rnd()*w,rnd()*h,1.5,1.5)}}
+ c.restore();const g=c.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.16)');c.fillStyle=g;c.fillRect(0,0,w,h)}
+
+function drawVessel(c,v,cx,cy,R,col){c.save();shade(c,R/6);
+ if(v==='plate'){circ(c,cx,cy,R,'#FBFBF7');ns(c);const g=c.createRadialGradient(cx,cy,R*.7,cx,cy,R);g.addColorStop(0,'#EFEEE8');g.addColorStop(.25,'#FFFFFF');g.addColorStop(1,'#F2F1EB');c.beginPath();c.arc(cx,cy,R,0,Math.PI*2);c.fillStyle=g;c.fill();circ(c,cx,cy,R*.74,'#F7F6F1');c.strokeStyle='rgba(0,0,0,.05)';c.lineWidth=2;c.stroke()}
+ else if(v==='bowl'){circ(c,cx,cy,R,col||'#EEE9DF');ns(c);const g=c.createRadialGradient(cx-R*.15,cy-R*.15,R*.1,cx,cy,R*.9);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(1,'rgba(0,0,0,.22)');c.beginPath();c.arc(cx,cy,R*.9,0,Math.PI*2);c.fillStyle=g;c.fill();c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=3;c.beginPath();c.arc(cx,cy,R*.96,Math.PI*1.05,Math.PI*1.6);c.stroke()}
+ else if(v==='pan'){c.fillStyle='#242424';rr(c,cx+R*.85,cy-R*.11,R*.75,R*.22,R*.1);c.fill();circ(c,cx,cy,R,'#2A2A2A');ns(c);const g=c.createRadialGradient(cx,cy,R*.2,cx,cy,R*.92);g.addColorStop(0,'#333');g.addColorStop(1,'#151515');c.beginPath();c.arc(cx,cy,R*.92,0,Math.PI*2);c.fillStyle=g;c.fill()}
+ else if(v==='board'){c.fillStyle='#C99A63';rr(c,cx-R*1.5,cy-R*.95,R*3,R*1.9,R*.14);c.fill();ns(c);c.save();rr(c,cx-R*1.5,cy-R*.95,R*3,R*1.9,R*.14);c.clip();c.strokeStyle='#B5844F';c.globalAlpha=.6;for(let y=cy-R;y<cy+R;y+=7){c.lineWidth=1+((y*7)%3);c.beginPath();c.moveTo(cx-R*1.6,y);c.bezierCurveTo(cx-R*.5,y+6,cx+R*.5,y-6,cx+R*1.6,y+2);c.stroke()}c.restore()}
+ else if(v==='glass'||v==='jar'){const r=R*.75;circ(c,cx,cy,r,'rgba(255,255,255,.45)');ns(c);c.strokeStyle='rgba(255,255,255,.95)';c.lineWidth=R*.05;c.beginPath();c.arc(cx,cy,r-R*.025,0,Math.PI*2);c.stroke();if(v==='jar'){c.strokeStyle='rgba(150,160,150,.5)';c.lineWidth=R*.03;c.beginPath();c.arc(cx,cy,r+R*.03,0,Math.PI*2);c.stroke()}}
+ c.restore()}
+
+function drawCutlery(c,cx,cy,R){c.save();shade(c,8);c.fillStyle='#C7CBCF';const fx=cx-R-46;
+ rr(c,fx-5,cy-R*.35,10,R*1.3,5);c.fill();rr(c,fx-13,cy-R*.62,26,R*.32,8);c.fill();for(let i=0;i<4;i++){rr(c,fx-13+i*7.3,cy-R*1.02,4.6,R*.48,2.3);c.fill()}
+ const kx=cx+R+46;rr(c,kx-6,cy-R*.1,12,R*1.05,6);c.fill();c.beginPath();c.moveTo(kx-6,cy-R*.1);c.lineTo(kx-6,cy-R*1.0);c.quadraticCurveTo(kx+9,cy-R*.98,kx+8,cy-R*.6);c.lineTo(kx+6,cy-R*.1);c.closePath();c.fill();c.restore()}
+
+const F={
+ salmon(c,s){const w=s*7.6,h=s*4.4;shade(c,s);rr(c,-w/2,-h/2,w,h,s*1.4);const g=c.createLinearGradient(0,-h/2,0,h/2);g.addColorStop(0,'#F6A273');g.addColorStop(1,'#DE6438');c.fillStyle=g;c.fill();ns(c);c.save();rr(c,-w/2,-h/2,w,h,s*1.4);c.clip();c.strokeStyle='rgba(255,236,222,.75)';c.lineWidth=s*.26;for(let i=-3;i<=3;i++){c.beginPath();c.moveTo(i*s*1.2-s*.5,-h/2);c.quadraticCurveTo(i*s*1.2+s*.7,0,i*s*1.2-s*.3,h/2);c.stroke()}c.fillStyle='rgba(150,70,30,.28)';c.fillRect(-w/2,-h/2,w,s*.55);c.restore();ell(c,-w*.18,-h*.18,w*.22,h*.1,0,'rgba(255,255,255,.2)')},
+ fishWhite(c,s,rnd){shade(c,s);blob(c,0,0,s*2.7,rnd,.1,14,1.35,.85);c.fillStyle='#F6F1E7';c.fill();ns(c);blob(c,-s*.6,-s*.3,s*1.6,rnd,.2,10,1.3,.7);c.fillStyle='rgba(222,176,96,.35)';c.fill();c.strokeStyle='#E2D5BF';c.lineWidth=s*.16;for(let i=-2;i<=2;i++){c.beginPath();c.arc(i*s*1.1,s*2.2,s*2.4,Math.PI*1.3,Math.PI*1.7);c.stroke()}},
+ fishChunk(c,s,rnd){blob(c,0,0,s*1.2,rnd,.18,10,1.2,.9);c.fillStyle='#F7F2E8';c.fill();c.strokeStyle='#E3D7C2';c.lineWidth=s*.12;c.beginPath();c.arc(0,s*1.1,s*1.3,Math.PI*1.25,Math.PI*1.75);c.stroke()},
+ mackerel(c,s){shade(c,s);c.beginPath();c.ellipse(0,0,s*4.8,s*1.55,0,0,Math.PI*2);const g=c.createLinearGradient(0,-s*1.5,0,s*1.5);g.addColorStop(0,'#5E6C78');g.addColorStop(.55,'#A9B4BB');g.addColorStop(1,'#D9DEE0');c.fillStyle=g;c.fill();ns(c);c.save();c.beginPath();c.ellipse(0,0,s*4.8,s*1.55,0,0,Math.PI*2);c.clip();c.strokeStyle='#26313B';c.lineWidth=s*.22;for(let i=-5;i<=5;i++){c.beginPath();c.moveTo(i*s*.85,-s*1.6);c.quadraticCurveTo(i*s*.85+s*.5,-s*.9,i*s*.85-s*.1,-s*.1);c.stroke()}c.strokeStyle='rgba(60,30,10,.45)';c.lineWidth=s*.3;for(let i=-2;i<=2;i++){c.beginPath();c.moveTo(i*s*1.7-s,s*1.4);c.lineTo(i*s*1.7+s,-s*1.4);c.stroke()}c.restore()},
+ shrimp(c,s){c.lineCap='round';c.strokeStyle='#E8704D';c.lineWidth=s*1.15;c.beginPath();c.arc(0,0,s*1.2,Math.PI*.15,Math.PI*1.45);c.stroke();c.strokeStyle='#F8AC8C';c.lineWidth=s*.42;c.beginPath();c.arc(0,0,s*1.42,Math.PI*.2,Math.PI*1.4);c.stroke();c.strokeStyle='rgba(190,70,40,.5)';c.lineWidth=s*.12;for(let k=0;k<5;k++){const a=Math.PI*(.3+k*.24);c.beginPath();c.moveTo(Math.cos(a)*s*.65,Math.sin(a)*s*.65);c.lineTo(Math.cos(a)*s*1.8,Math.sin(a)*s*1.8);c.stroke()}const a=Math.PI*1.45,tx=Math.cos(a)*s*1.2,ty=Math.sin(a)*s*1.2;c.beginPath();c.moveTo(tx,ty);c.lineTo(tx+s*1.0,ty-s*.5);c.lineTo(tx+s*.9,ty+s*.6);c.closePath();c.fillStyle='#D9502F';c.fill()},
+ potato(c,s,rnd){shade(c,s*.6);ell(c,0,0,s*1.55,s*1.2,0,'#D4A14A');ns(c);ell(c,0,0,s*1.28,s*.96,0,'#F1D485');ell(c,-s*.35,-s*.3,s*.5,s*.25,-.4,'rgba(255,255,255,.35)');for(let i=0;i<3;i++){const[x,y]=inDisk(rnd,s);circ(c,x,y,s*.08,'rgba(140,90,30,.4)')}},
+ greenbean(c,s,rnd){c.lineCap='round';const k=(rnd()-.5)*s*1.4;c.strokeStyle='#3F8A30';c.lineWidth=s*.66;c.beginPath();c.moveTo(-s*2.5,0);c.quadraticCurveTo(0,k,s*2.5,0);c.stroke();c.strokeStyle='#7CC261';c.lineWidth=s*.18;c.beginPath();c.moveTo(-s*2.2,-s*.14);c.quadraticCurveTo(0,k-s*.16,s*2.2,-s*.14);c.stroke()},
+ lemonSlice(c,s){circ(c,0,0,s*1.7,'#EFC11F');circ(c,0,0,s*1.5,'#FBE27A');c.strokeStyle='#FFF7D6';c.lineWidth=s*.13;for(let i=0;i<9;i++){const a=i/9*Math.PI*2;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*s*1.45,Math.sin(a)*s*1.45);c.stroke()}circ(c,0,0,s*.2,'#FFF7D6')},
+ lemonWedge(c,s){shade(c,s*.6);c.beginPath();c.ellipse(0,0,s*2.4,s*1.25,0,0,Math.PI);c.closePath();c.fillStyle='#EFC11F';c.fill();ns(c);c.beginPath();c.ellipse(0,s*.05,s*2.15,s*1.0,0,0,Math.PI);c.closePath();c.fillStyle='#FBE27A';c.fill();c.strokeStyle='#FFF7D6';c.lineWidth=s*.12;for(let i=1;i<5;i++){const a=i/5*Math.PI;c.beginPath();c.moveTo(0,s*.05);c.lineTo(Math.cos(a)*s*2.1,Math.sin(a)*s*1.0);c.stroke()}},
+ tomatoChunk(c,s,rnd){rr(c,-s*.95,-s*.8,s*1.9,s*1.6,s*.55);c.fillStyle='#D33F2B';c.fill();ell(c,s*.1,s*.05,s*.62,s*.5,0,'#EE6B51');for(let i=0;i<3;i++)ell(c,(rnd()-.5)*s*.8,(rnd()-.5)*s*.5,s*.14,s*.09,rnd()*3,'#F7D28A')},
+ cherryHalf(c,s){circ(c,0,0,s*1.0,'#CF3124');circ(c,0,0,s*.84,'#E6533D');for(let i=0;i<3;i++){const a=i/3*Math.PI*2+.4;ell(c,Math.cos(a)*s*.42,Math.sin(a)*s*.42,s*.28,s*.2,a,'#F4A27E');circ(c,Math.cos(a)*s*.42,Math.sin(a)*s*.42,s*.07,'#F8E3A0')}circ(c,0,0,s*.16,'#F3B593')},
+ olive(c,s){ell(c,0,0,s*.75,s*.55,0,'#3A2738');ell(c,-s*.22,-s*.18,s*.22,s*.12,-.4,'rgba(255,255,255,.25)')},
+ caper(c,s){circ(c,0,0,s*.33,'#65762F');circ(c,-s*.1,-s*.1,s*.1,'rgba(255,255,255,.25)')},
+ feta(c,s,rnd){rr(c,-s*.65,-s*.65,s*1.3,s*1.3,s*.16);c.fillStyle='#FCF9F0';c.fill();c.strokeStyle='#E5DDC8';c.lineWidth=s*.08;c.stroke();for(let i=0;i<3;i++)circ(c,(rnd()-.5)*s,(rnd()-.5)*s,s*.06,'#E8E0CB')},
+ cucumber(c,s,rnd){circ(c,0,0,s*1.15,'#2F6D33');circ(c,0,0,s*1.0,'#BFDC93');circ(c,0,0,s*.6,'#D9EBB4');for(let i=0;i<6;i++){const a=i/6*Math.PI*2;ell(c,Math.cos(a)*s*.32,Math.sin(a)*s*.32,s*.12,s*.07,a,'#F3F7E2')}},
+ pepperStrip(c,s,rnd,o){c.lineCap='round';c.strokeStyle=o.c||'#D8392B';c.lineWidth=s*.72;c.beginPath();c.arc(0,0,s*2.1,0,Math.PI*.5);c.stroke();c.strokeStyle='rgba(255,255,255,.3)';c.lineWidth=s*.18;c.beginPath();c.arc(0,0,s*1.95,.1,Math.PI*.42);c.stroke()},
+ eggFried(c,s,rnd){shade(c,s*.6);blob(c,0,0,s*2.5,rnd,.14,12);c.fillStyle='#FFFDF6';c.fill();ns(c);const g=c.createRadialGradient(-s*.3,-s*.3,s*.1,0,0,s*1.05);g.addColorStop(0,'#FFD35A');g.addColorStop(1,'#F0961A');c.beginPath();c.arc(s*.1,s*.05,s*1.05,0,Math.PI*2);c.fillStyle=g;c.fill();ell(c,-s*.25,-s*.3,s*.3,s*.16,-.5,'rgba(255,255,255,.55)')},
+ eggHalf(c,s){ell(c,0,0,s*1.75,s*1.25,0,'#FFFDF6');c.strokeStyle='#E8E2D2';c.lineWidth=s*.1;c.stroke();circ(c,s*.1,0,s*.78,'#F6C143')},
+ eggSlice(c,s){circ(c,0,0,s*1.25,'#FFFDF6');c.strokeStyle='#E8E2D2';c.lineWidth=s*.08;c.stroke();circ(c,0,0,s*.62,'#F5BD38')},
+ omelette(c,s,rnd){for(let i=0;i<5;i++){c.save();c.translate(-s*3.6+i*s*1.8,-s*.25);c.rotate(-Math.PI/2+(rnd()-.5)*.8);leafPath(c,s*2.4,s*1.2);c.fillStyle='#2E6A33';c.fill();c.restore()}shade(c,s);c.beginPath();c.ellipse(0,0,s*5.4,s*3.6,0,0,Math.PI);c.closePath();const g=c.createLinearGradient(0,0,0,s*3.6);g.addColorStop(0,'#F9DA72');g.addColorStop(1,'#E8AE3A');c.fillStyle=g;c.fill();ns(c);for(let i=0;i<12;i++){const x=(rnd()-.5)*s*8,y=rnd()*s*2.8;if((x*x)/(s*s*27)+(y*y)/(s*s*12)<1)ell(c,x,y,s*.4,s*.22,rnd()*3,'rgba(190,120,30,.35)')}},
+ herbBit(c,s,rnd){ell(c,0,0,s*(.16+rnd()*.18),s*.1,0,rnd()<.5?'#3F7D3A':'#5FA048')},
+ basil(c,s){leafPath(c,s*2.3,s*1.15);c.fillStyle='#3B8C3F';c.fill();c.strokeStyle='#62B565';c.lineWidth=s*.1;c.beginPath();c.moveTo(-s*1.1,0);c.lineTo(s*1.0,0);c.stroke()},
+ spinach(c,s){leafPath(c,s*2.9,s*1.8);c.fillStyle='#2E6A33';c.fill();c.strokeStyle='#4E8C50';c.lineWidth=s*.12;c.beginPath();c.moveTo(-s*1.45,0);c.lineTo(s*1.3,0);c.stroke()},
+ leaf(c,s,rnd,o){blob(c,0,0,s*2.3,rnd,.22,16,1.15,.85);c.fillStyle=o.c||'#7DB94B';c.fill();c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=s*.14;c.beginPath();c.moveTo(-s*2,0);c.lineTo(s*2,0);c.stroke();for(let i=-1;i<=1;i++){c.beginPath();c.moveTo(i*s*.9,0);c.lineTo(i*s*.9+s*.6,-s*1.1);c.moveTo(i*s*.9,0);c.lineTo(i*s*.9+s*.6,s*1.1);c.stroke()}},
+ bokchoy(c,s){rr(c,-s*.55,-s*.1,s*1.1,s*2.8,s*.5);c.fillStyle='#EEF3DA';c.fill();ell(c,0,-s*1.3,s*1.5,s*2.0,0,'#3E8C3A');c.strokeStyle='#CFE3B5';c.lineWidth=s*.18;c.beginPath();c.moveTo(0,s*1.2);c.lineTo(0,-s*2.6);c.stroke()},
+ carrotRound(c,s){circ(c,0,0,s*.85,'#E7741A');circ(c,0,0,s*.62,'#F5983A');circ(c,0,0,s*.28,'#F8B464')},
+ carrotStrip(c,s){c.lineCap='round';c.strokeStyle='#EF8325';c.lineWidth=s*.38;c.beginPath();c.moveTo(-s*1.8,0);c.lineTo(s*1.8,0);c.stroke()},
+ chickpea(c,s){const g=c.createRadialGradient(-s*.2,-s*.2,s*.05,0,0,s*.62);g.addColorStop(0,'#F1D597');g.addColorStop(1,'#C49450');c.beginPath();c.arc(0,0,s*.62,0,Math.PI*2);c.fillStyle=g;c.fill();c.strokeStyle='rgba(150,100,40,.5)';c.lineWidth=s*.08;c.beginPath();c.arc(s*.2,0,s*.3,Math.PI*.6,Math.PI*1.4);c.stroke()},
+ tofu(c,s){rr(c,-s*.85,-s*.85,s*1.7,s*1.7,s*.28);c.fillStyle='#D5A256';c.fill();rr(c,-s*.65,-s*.65,s*1.3,s*1.3,s*.2);c.fillStyle='#F3E2B9';c.fill()},
+ chicken(c,s){rr(c,-s*.85,-s*.75,s*1.7,s*1.5,s*.35);c.fillStyle='#E2AE6C';c.fill();c.strokeStyle='#985C28';c.lineWidth=s*.18;c.beginPath();c.moveTo(-s*.6,s*.5);c.lineTo(s*.2,-s*.5);c.moveTo(-s*.1,s*.6);c.lineTo(s*.65,-s*.4);c.stroke()},
+ skewer(c,s){c.lineCap='round';c.strokeStyle='#B9894F';c.lineWidth=s*.24;c.beginPath();c.moveTo(-s*6.8,0);c.lineTo(s*6.4,0);c.stroke();const pcs=['chicken','pep','chicken','zuc','chicken','pep'];pcs.forEach((p,i)=>{c.save();c.translate(-s*5+i*s*1.95,0);c.rotate((i%2?.2:-.15));if(p==='chicken'){shade(c,s*.5);F.chicken(c,s);ns(c)}else{rr(c,-s*.6,-s*.75,s*1.2,s*1.5,s*.3);c.fillStyle=p==='pep'?'#D8432E':'#3E7F34';c.fill();rr(c,-s*.4,-s*.55,s*.8,s*1.1,s*.2);c.fillStyle=p==='pep'?'#E96A50':'#D5E6A5';c.fill()}c.restore()})},
+ bread(c,s,rnd){shade(c,s);rr(c,-s*3.7,-s*3.1,s*7.4,s*6.2,s*1.5);c.fillStyle='#A9692F';c.fill();ns(c);rr(c,-s*3.25,-s*2.65,s*6.5,s*5.3,s*1.2);c.fillStyle='#EACB91';c.fill();for(let i=0;i<16;i++){const x=(rnd()-.5)*s*5.6,y=(rnd()-.5)*s*4.4;ell(c,x,y,s*(.15+rnd()*.3),s*(.1+rnd()*.2),rnd()*3,'#D5AE6C')}},
+ blueberry(c,s){const g=c.createRadialGradient(-s*.15,-s*.15,s*.05,0,0,s*.5);g.addColorStop(0,'#7084C4');g.addColorStop(1,'#26336A');c.beginPath();c.arc(0,0,s*.5,0,Math.PI*2);c.fillStyle=g;c.fill();circ(c,s*.1,s*.08,s*.1,'#1A2250')},
+ seed(c,s){ell(c,0,0,s*.55,s*.28,0,'#4F7A3A');ell(c,0,0,s*.38,s*.16,0,'#6D9A4E')},
+ nut(c,s,rnd){blob(c,0,0,s*.9,rnd,.3,9);c.fillStyle='#9C6A3A';c.fill();c.strokeStyle='#6E4521';c.lineWidth=s*.12;c.beginPath();c.moveTo(-s*.5,0);c.quadraticCurveTo(0,-s*.4,s*.5,0);c.stroke()},
+ strawberryHalf(c,s){ell(c,0,0,s*1.1,s*1.35,0,'#DC3349');ell(c,0,s*.05,s*.82,s*1.05,0,'#F39AA2');ell(c,0,s*.1,s*.3,s*.65,0,'#FBE0E0');ell(c,0,-s*1.3,s*.6,s*.2,0,'#4A8C35')},
+ strawberry(c,s,rnd){shade(c,s*.5);ell(c,0,0,s*1.15,s*1.4,0,'#D92D44');ns(c);for(let i=0;i<14;i++){const[x,y]=inDisk(rnd,s*.95);ell(c,x,y*1.2,s*.06,s*.1,0,'#F5D66B')}for(let i=0;i<5;i++){c.save();c.translate(0,-s*1.25);c.rotate(i/5*Math.PI*2);leafPath(c,s*1.2,s*.4);c.fillStyle='#3D7E2E';c.fill();c.restore()}},
+ bananaSlice(c,s){circ(c,0,0,s*.85,'#E9D17E');circ(c,0,0,s*.72,'#F8EBB5');for(let i=0;i<3;i++){const a=i/3*Math.PI*2;circ(c,Math.cos(a)*s*.16,Math.sin(a)*s*.16,s*.06,'#B9954D')}},
+ kiwi(c,s){circ(c,0,0,s*1.45,'#6E5130');const g=c.createRadialGradient(0,0,s*.2,0,0,s*1.32);g.addColorStop(0,'#C6DE72');g.addColorStop(1,'#6FA52B');c.beginPath();c.arc(0,0,s*1.32,0,Math.PI*2);c.fillStyle=g;c.fill();for(let i=0;i<16;i++){const a=i/16*Math.PI*2;ell(c,Math.cos(a)*s*.62,Math.sin(a)*s*.62,s*.12,s*.05,a,'#1E1E14')}circ(c,0,0,s*.34,'#F2F0D8')},
+ aubergine(c,s){rr(c,-s*.8,-s*.7,s*1.6,s*1.4,s*.3);c.fillStyle='#E6D3A4';c.fill();c.save();rr(c,-s*.8,-s*.7,s*1.6,s*1.4,s*.3);c.clip();c.fillStyle='#4A2848';c.fillRect(-s,-s*.8,s*2,s*.4);c.restore();circ(c,s*.1,s*.15,s*.08,'#C6B27E')},
+ zucchini(c,s){circ(c,0,0,s*.95,'#2E5E2A');circ(c,0,0,s*.8,'#D8E8A8');circ(c,0,0,s*.42,'#E8F2C6')},
+ radish(c,s){circ(c,0,0,s*.82,'#D63D66');circ(c,0,0,s*.66,'#FFF6F4');c.strokeStyle='rgba(214,61,102,.25)';c.lineWidth=s*.06;c.beginPath();c.arc(0,0,s*.4,0,Math.PI*2);c.stroke()},
+ redcabbage(c,s,rnd){c.lineCap='round';c.strokeStyle=rnd()<.5?'#7B2E6E':'#9C4A8E';c.lineWidth=s*.3;c.beginPath();c.moveTo(-s*1.1,0);c.quadraticCurveTo(0,(rnd()-.5)*s*1.5,s*1.1,0);c.stroke()},
+ scallion(c,s){circ(c,0,0,s*.32,'#D9F0B8');c.strokeStyle='#5FB043';c.lineWidth=s*.16;c.beginPath();c.arc(0,0,s*.32,0,Math.PI*2);c.stroke()},
+ chiliRing(c,s){c.strokeStyle='#D42A1E';c.lineWidth=s*.2;c.beginPath();c.arc(0,0,s*.36,0,Math.PI*2);c.stroke();circ(c,0,0,s*.26,'#F4E2B0');circ(c,s*.06,0,s*.06,'#F7C64A')},
+ parmesan(c,s,rnd){c.beginPath();const n=5;for(let i=0;i<n;i++){const a=i/n*Math.PI*2,d=s*(.5+rnd()*.5);i?c.lineTo(Math.cos(a)*d,Math.sin(a)*d*.6):c.moveTo(Math.cos(a)*d,Math.sin(a)*d*.6)}c.closePath();c.fillStyle='#F3E1A6';c.fill();c.strokeStyle='#DFC678';c.lineWidth=s*.06;c.stroke()},
+ dollop(c,s,rnd){shade(c,s*.6);blob(c,0,0,s*2.1,rnd,.12,12);c.fillStyle='#F7F7F1';c.fill();ns(c);for(let i=0;i<14;i++){const[x,y]=inDisk(rnd,s*1.6);ell(c,x,y,s*.16,s*.07,rnd()*3,'#6FA352')}c.strokeStyle='rgba(205,165,40,.6)';c.lineWidth=s*.18;c.beginPath();c.arc(0,0,s*.8,.3,2.4);c.stroke()},
+ tuna(c,s,rnd){blob(c,0,0,s*1.15,rnd,.35,9);c.fillStyle='#C9A07A';c.fill();c.strokeStyle='#A67C58';c.lineWidth=s*.1;c.beginPath();c.moveTo(-s*.6,-s*.2);c.lineTo(s*.5,s*.1);c.stroke()},
+ riceCake(c,s,rnd){shade(c,s);circ(c,0,0,s*3.5,'#E5CF97');ns(c);for(let i=0;i<110;i++){const[x,y]=inDisk(rnd,s*3.2);ell(c,x,y,s*.3,s*.16,rnd()*3,rnd()<.5?'#F6EAC6':'#D3B977')}},
+ spread(c,s,rnd){blob(c,0,0,s*2.6,rnd,.14,12);c.fillStyle='#B87F42';c.fill();ell(c,-s*.6,-s*.6,s*.9,s*.3,-.5,'rgba(255,255,255,.22)')},
+ straw(c,s){c.lineCap='round';c.strokeStyle='#F4F4F2';c.lineWidth=s*.95;c.beginPath();c.moveTo(0,0);c.lineTo(s*12,0);c.stroke();c.strokeStyle='#E35D6A';c.lineWidth=s*.95;c.setLineDash([s*.9,s*.9]);c.beginPath();c.moveTo(s*.4,0);c.lineTo(s*12,0);c.stroke();c.setLineDash([])}
+};
+const BASE={
+ rice(c,x,y,r,s,rnd){blob(c,x,y,r,rnd,.08,14);c.fillStyle='#F1EEE4';c.fill();const n=Math.round(r*r/(s*s)*2.6);for(let i=0;i<n;i++){const[dx,dy]=inDisk(rnd,r*.95);c.beginPath();c.ellipse(x+dx,y+dy,s*.42,s*.17,rnd()*Math.PI,0,Math.PI*2);c.fillStyle='#FFFFFF';c.fill();c.strokeStyle='#E2DCCD';c.lineWidth=.8;c.stroke()}},
+ quinoa(c,x,y,r,s,rnd){blob(c,x,y,r,rnd,.08,14);c.fillStyle='#E0D1AA';c.fill();const n=Math.round(r*r/(s*s)*7);const cols=['#F0E3C0','#D8C595','#C9B07A','#B9905E'];for(let i=0;i<n;i++){const[dx,dy]=inDisk(rnd,r*.96);circ(c,x+dx,y+dy,s*.18,cols[i%4])}},
+ pasta(c,x,y,r,s,rnd){blob(c,x,y,r,rnd,.08,14);c.fillStyle='#E3B85A';c.fill();c.lineCap='round';const n=Math.round(r/s*7);for(let i=0;i<n;i++){const[dx,dy]=inDisk(rnd,r*.8);const a=rnd()*Math.PI;const L=s*(3+rnd()*3);c.save();c.translate(x+dx,y+dy);c.rotate(a);c.beginPath();for(let t=-L;t<=L;t+=s*.4){const yy=Math.sin(t/(s*.9)+i)*s*.5;t===-L?c.moveTo(t,yy):c.lineTo(t,yy)}c.strokeStyle='#C9963C';c.lineWidth=s*.6;c.stroke();c.strokeStyle='#F4D27C';c.lineWidth=s*.42;c.stroke();c.restore()}},
+ sauce(c,x,y,r,s,rnd,o){blob(c,x,y,r,rnd,.1,16);c.fillStyle=o.c||'#C9432C';c.fill();for(let i=0;i<16;i++){const[dx,dy]=inDisk(rnd,r*.85);blob(c,x+dx,y+dy,s*(.3+rnd()*.6),rnd,.3,7);c.fillStyle=rnd()<.5?'rgba(0,0,0,.12)':'rgba(255,255,255,.1)';c.fill()}for(let i=0;i<5;i++){const[dx,dy]=inDisk(rnd,r*.8);circ(c,x+dx,y+dy,s*(.2+rnd()*.3),'rgba(255,210,90,.28)')}},
+ soup(c,x,y,r,s,rnd,o){const g=c.createRadialGradient(x-r*.2,y-r*.2,r*.1,x,y,r);g.addColorStop(0,'#FFF6E2');g.addColorStop(.3,o.c||'#F1E1BF');g.addColorStop(1,'#D9C292');c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=g;c.fill();for(let i=0;i<10;i++){const[dx,dy]=inDisk(rnd,r*.85);circ(c,x+dx,y+dy,s*(.15+rnd()*.3),'rgba(240,190,70,.35)')}},
+ polenta(c,x,y,r,s,rnd){blob(c,x,y,r,rnd,.06,16);const g=c.createRadialGradient(x-r*.2,y-r*.2,r*.1,x,y,r);g.addColorStop(0,'#FBDD75');g.addColorStop(1,'#E9B53A');c.fillStyle=g;c.fill()},
+ oats(c,x,y,r,s,rnd){c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle='#DCC79B';c.fill();const n=Math.round(r*r/(s*s)*3);for(let i=0;i<n;i++){const[dx,dy]=inDisk(rnd,r*.95);ell(c,x+dx,y+dy,s*.36,s*.22,rnd()*3,rnd()<.5?'#EEE1BD':'#C8B07A')}},
+ smoothie(c,x,y,r,s,rnd,o){const g=c.createRadialGradient(x-r*.2,y-r*.2,r*.1,x,y,r);g.addColorStop(0,'#FBD3DB');g.addColorStop(1,o.c||'#EE8FA3');c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=g;c.fill();for(let i=0;i<20;i++){const[dx,dy]=inDisk(rnd,r*.9);circ(c,x+dx,y+dy,s*(.08+rnd()*.15),'rgba(255,255,255,.4)')}},
+ herb(c,x,y,r,s,rnd){for(let i=0;i<28;i++){const[dx,dy]=inDisk(rnd,r);c.save();c.translate(x+dx,y+dy);c.rotate(rnd()*3);F.herbBit(c,s,rnd);c.restore()}},
+ dill(c,x,y,r,s,rnd){c.lineCap='round';for(let i=0;i<7;i++){const[dx,dy]=inDisk(rnd,r);c.save();c.translate(x+dx,y+dy);c.rotate(rnd()*6.3);c.strokeStyle='#4E8F3A';c.lineWidth=s*.08;for(let k=0;k<6;k++){const a=k/6*Math.PI*2;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*s*.7,Math.sin(a)*s*.7);c.stroke()}c.restore()}},
+ chia(c,x,y,r,s,rnd){for(let i=0;i<40;i++){const[dx,dy]=inDisk(rnd,r);ell(c,x+dx,y+dy,s*.1,s*.07,rnd()*3,rnd()<.6?'#2A2622':'#7C7870')}},
+ sesame(c,x,y,r,s,rnd){for(let i=0;i<34;i++){const[dx,dy]=inDisk(rnd,r);ell(c,x+dx,y+dy,s*.14,s*.07,rnd()*3,'#F3E6C2')}},
+ drizzle(c,x,y,r,s,rnd){c.strokeStyle='#B9773A';c.lineWidth=s*.32;c.lineCap='round';c.beginPath();for(let t=0;t<=1;t+=.02){const xx=x-r+t*2*r,yy=y+Math.sin(t*14)*s*1.2+(t-.5)*r*.4;t===0?c.moveTo(xx,yy):c.lineTo(xx,yy)}c.stroke()}
+};
+const SHADOWED=new Set(['skewer']);
+function place(c,sp,cx,cy,R,rnd){const[t,n,x,y,r,o={}]=sp;const s=R/10*(o.s||1);const px0=cx+x*R,py0=cy+y*R;
+ if(BASE[t]){BASE[t](c,px0,py0,r*R,s,rnd,o);return}
+ const pts=[],md=(o.md||0)*R;
+ for(let i=0;i<n;i++){let px,py,tries=0;do{const[dx,dy]=inDisk(rnd,r*R);px=px0+dx;py=py0+dy;tries++}while(md&&tries<40&&pts.some(p=>Math.hypot(p[0]-px,p[1]-py)<md));pts.push([px,py]);
+  c.save();c.translate(px,py);c.rotate(o.rot!=null?o.rot:rnd()*Math.PI*2);if(SHADOWED.has(t))shade(c,s*.5);F[t](c,s,rnd,o);c.restore()}}
+function drawDish(c,art,cx,cy,R,rnd){if(art.cut)drawCutlery(c,cx,cy,R);drawVessel(c,art.v,cx,cy,R,art.col);art.items.forEach(sp=>place(c,sp,cx,cy,R,rnd))}
+function dishR(v,base){return v==='board'?base*1.0:(v==='glass'||v==='jar')?base*1.2:base}
+const IMG={};
+function imgFor(r){if(IMG[r.id])return IMG[r.id];const w=640,h=480,cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');const rnd=rng(hash(r.id));drawTable(c,w,h,r.art.table,rnd);drawDish(c,r.art,w/2,h/2,dishR(r.art.v,170),rnd);IMG[r.id]=cv.toDataURL('image/jpeg',.86);return IMG[r.id]}
+function heroImage(){const w=1400,h=620,cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');const rnd=rng(7);drawTable(c,w,h,'wood',rnd);
+ const by=id=>R.find(r=>r.id===id).art;
+ drawDish(c,{...by('nicoise'),cut:0},300,330,205,rnd);drawDish(c,by('shakshuka'),735,285,185,rnd);drawDish(c,{...by('laks'),cut:0},1135,345,200,rnd);
+ [['lemonWedge',1,560,560,0,{rot:.4}],['olive',5,560,80,40],['basil',3,960,90,40],['cherryHalf',2,930,575,30,{md:30}]].forEach(([t,n,x,y,r,o={}])=>{for(let i=0;i<n;i++){const[dx,dy]=inDisk(rnd,r);c.save();c.translate(x+dx,y+dy);c.rotate(o.rot!=null?o.rot:rnd()*6.3);F[t](c,19,rnd,o);c.restore()}});
+ return cv.toDataURL('image/jpeg',.86)}
+
+/* ---------- Logic ---------- */
+function tagsOf(i){return typeof i==='string'||!i.g?[]:i.g.split(' ')}
+function adapt(r){let swaps=0;const block=new Set();const ingr=r.ingr.map(i=>{if(typeof i==='string')return{text:i};const hit=tagsOf(i).filter(t=>state.avoid.has(t));if(!hit.length)return{text:i.t};if(i.s){swaps++;return{text:i.s,orig:i.t,tags:hit}}hit.forEach(t=>block.add(t));return{text:i.t,blocked:true}});return{ok:!block.size,block:[...block],ingr,swaps}}
+function norm(s){return s.toLowerCase().normalize('NFC')}
+function visible(){const q=norm(state.q.trim());const shown=[],hidden=[];
+ R.forEach(r=>{if(state.diet!=='alle'&&!r.diets.includes(state.diet))return;if(state.meal!=='alle'&&r.meal!==state.meal)return;if(state.favOnly&&!state.favs.has(r.id))return;
+  if(q){const hay=norm(r.name+' '+r.desc+' '+r.ingr.map(i=>typeof i==='string'?i:i.t+' '+(i.s||'')).join(' '));if(!hay.includes(q))return}
+  const a=adapt(r);(a.ok?shown:hidden).push({r,a})});return{shown,hidden}}
+
+const $=s=>document.querySelector(s);
+const heart='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-8.6C1.3 8.4 3 5 6.4 5c2 0 3.3 1.1 4 2.3h3.2C14.3 6.1 15.6 5 17.6 5 21 5 22.7 8.4 21.2 11.4 19 15.6 12 20 12 20z" transform="translate(0 -1)"/></svg>';
+
+function renderOpts(){const mk=g=>`<label class="opt" for="g-${g.id}"><input type="checkbox" id="g-${g.id}" data-g="${g.id}" ${state.avoid.has(g.id)?'checked':''}><div><b>${g.name}</b><span>${g.ex}</span></div></label>`;
+ $('#fodOpts').innerHTML=GROUPS.filter(g=>g.fod).map(mk).join('');$('#otherOpts').innerHTML=GROUPS.filter(g=>!g.fod).map(mk).join('');
+ document.querySelectorAll('[data-g]').forEach(cb=>cb.addEventListener('change',()=>{cb.checked?state.avoid.add(cb.dataset.g):state.avoid.delete(cb.dataset.g);save();update()}))}
+function renderChips(){const mk=(arr,key,el)=>{$(el).innerHTML=arr.map(([v,l])=>`<button class="chip" type="button" data-${key}="${v}" aria-pressed="${state[key]===v}">${l}</button>`).join('');
+  $(el).querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state[key]=b.dataset[key];renderChips();renderGrid()}))};
+ mk(DIETS,'diet','#dietChips');mk(MEALS,'meal','#mealChips')}
+
+function renderGrid(){const{shown,hidden}=visible();const n=shown.length;
+ $('#resultTitle').textContent=state.avoid.size?`${n} ${n===1?'oppskrift passer':'oppskrifter passer'} for deg`:`${n} ${n===1?'oppskrift':'oppskrifter'}`;
+ if(hidden.length){const why=[...new Set(hidden.flatMap(h=>h.a.block))].map(t=>GNAME[t].toLowerCase());$('#hiddenNote').textContent=`${hidden.length} skjult fordi de inneholder ${why.join(', ')}.`}
+ else $('#hiddenNote').textContent=state.avoid.size?'Oppskriftene er tilpasset det du har huket av.':'Huk av det du ikke tåler i panelet, så tilpasses oppskriftene.';
+ if(!n){$('#grid').innerHTML='<div class="empty" style="grid-column:1/-1"><b>Ingen oppskrifter passer akkurat nå.</b><br>Prøv et annet måltid eller kosthold, eller fjern søket.</div>';return}
+ $('#grid').innerHTML=shown.map(({r,a})=>`<article class="card" tabindex="0" role="button" data-id="${r.id}" aria-label="${r.name}">
+  <img src="${imgFor(r)}" alt="Illustrasjon av ${r.name.toLowerCase()}" width="640" height="480">
+  <button class="fav" type="button" data-fav="${r.id}" aria-pressed="${state.favs.has(r.id)}" aria-label="Lagre ${r.name} som favoritt">${heart}</button>
+  <div class="card-body"><div class="meta"><span>${MEALNAME[r.meal]}</span><span>·</span><span>${r.time} min</span><span>·</span><span>${r.serv} pers.</span></div>
+  <h3>${r.name}</h3><p>${r.desc}</p>
+  <div class="meta">${r.diets.map(d=>`<span class="tag">${DIETNAME[d]}</span>`).join('')}${a.swaps?`<span class="tag swap">${a.swaps} ${a.swaps===1?'bytte':'bytter'} for deg</span>`:''}</div></div></article>`).join('');
+ document.querySelectorAll('.card').forEach(el=>{el.addEventListener('click',()=>openRecipe(el.dataset.id));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecipe(el.dataset.id)}})});
+ document.querySelectorAll('[data-fav]').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();toggleFav(b.dataset.fav);b.setAttribute('aria-pressed',state.favs.has(b.dataset.fav));if(state.favOnly)renderGrid()}))}
+function toggleFav(id){state.favs.has(id)?state.favs.delete(id):state.favs.add(id);save()}
+
+function openRecipe(id){const r=R.find(x=>x.id===id);const a=adapt(r);const d=$('#dlg');
+ const q=encodeURIComponent(r.name+' lav FODMAP oppskrift');
+ d.innerHTML=`<div class="dlg-img"><img src="${imgFor(r)}" alt="Illustrasjon av ${r.name.toLowerCase()}"><button class="dlg-close" type="button" aria-label="Lukk">×</button></div>
+ <div class="dlg-body"><div><div class="meta" style="margin-bottom:8px"><span>${MEALNAME[r.meal]}</span><span>·</span><span>${r.time} min</span><span>·</span><span>${r.serv} ${r.serv===1?'porsjon':'porsjoner'}</span>${r.diets.map(x=>`<span class="tag">${DIETNAME[x]}</span>`).join('')}</div>
+ <h2 id="dlgTitle">${r.name}</h2></div>
+ ${a.ok?'':`<div class="note"><b>Obs:</b> Denne retten inneholder ${a.block.map(t=>GNAME[t].toLowerCase()).join(' og ')}, som du har huket av.</div>`}
+ <div class="dlg-cols"><div><h3>Ingredienser</h3><ul class="ing">${a.ingr.map(i=>i.orig?`<li class="swapped"><span class="why">Byttet ut · ${i.tags.map(t=>GNAME[t]).join(', ')}</span>${i.text}<del>${i.orig}</del></li>`:`<li>${i.text}</li>`).join('')}</ul></div>
+ <div><h3>Slik gjør du</h3>${a.swaps?'<p class="hidden-note" style="margin:-4px 0 12px">Der fremgangsmåten nevner noe du har byttet ut, bruker du erstatningen.</p>':''}<ol class="steps">${r.steps.map(s=>`<li><span>${s}</span></li>`).join('')}</ol></div></div>
+ <div class="tip"><b>Magetips:</b> ${r.tip}</div>
+ <div class="dlg-actions"><button class="btn btn-primary" type="button" id="dlgFav">${state.favs.has(r.id)?'Fjern fra favoritter':'Lagre som favoritt'}</button><a class="btn btn-ghost" href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Finn lignende oppskrifter på nett</a></div></div>`;
+ d.querySelector('.dlg-close').onclick=()=>d.close();
+ d.querySelector('#dlgFav').onclick=e=>{toggleFav(r.id);e.target.textContent=state.favs.has(r.id)?'Fjern fra favoritter':'Lagre som favoritt';renderGrid()};
+ if(!d.open)d.showModal();d.scrollTop=0}
+$('#dlg').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.close()});
+
+function renderFood(){const q=norm(($('#fq').value||'').trim());
+ const html=FOOD.map(cat=>{const cols={ok:[],lite:[],unnga:[]};
+  cat.items.forEach(([name,st,note='',tg=''])=>{if(q&&!norm(name+' '+note).includes(q))return;const tags=tg?tg.split(' '):[];const hit=tags.filter(t=>state.avoid.has(t));let col=st,mine=false,extra=note;
+   if(hit.length){mine=true;if(st==='ok'){col='unnga';extra=(note?note+'. ':'')+'Du unngår '+hit.map(t=>GNAME[t].toLowerCase()).join(' og ')}}
+   cols[col].push(`<li class="${mine?'mine':''}">${name}${extra?`<small>${extra}</small>`:''}</li>`)});
+  if(q&&!cols.ok.length&&!cols.lite.length&&!cols.unnga.length)return'';
+  const col=(k,l)=>`<div class="col ${k}"><h4><i class="dot"></i>${l}</h4><ul class="items">${cols[k].join('')||'<li class="none">Ingen her</li>'}</ul></div>`;
+  return`<section class="cat"><h3>${cat.name}</h3><div class="cols">${col('ok','Spis fritt')}${col('lite','Små porsjoner')}${col('unnga','Unngå i starten')}</div></section>`}).join('');
+ $('#foodList').innerHTML=html||'<div class="empty">Fant ingen matvarer med det navnet.</div>'}
+
+function update(){const n=state.avoid.size;$('#countPill').textContent=n?`${n} valgt`:'Ingen valgt';renderGrid();renderFood()}
+
+/* ---------- Views ---------- */
+const VIEWS=['oppskrifter','matliste','om'];
+function show(v){if(!VIEWS.includes(v))v='oppskrifter';VIEWS.forEach(x=>{$('#view-'+x).hidden=x!==v});document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.view===v))}
+document.querySelectorAll('.tab,[data-goto]').forEach(b=>b.addEventListener('click',()=>{const v=b.dataset.view||b.dataset.goto;if(location.hash!=='#'+v)location.hash=v;else show(v);if(b.dataset.goto)$('.layout').scrollIntoView({behavior:'smooth'})}));
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+$('#q').addEventListener('input',e=>{state.q=e.target.value;renderGrid()});
+$('#fq').addEventListener('input',renderFood);
+$('#favChip').addEventListener('click',e=>{state.favOnly=!state.favOnly;e.currentTarget.setAttribute('aria-pressed',state.favOnly);renderGrid()});
+$('#strictBtn').addEventListener('click',()=>{GROUPS.filter(g=>g.fod).forEach(g=>state.avoid.add(g.id));save();renderOpts();update()});
+$('#resetBtn').addEventListener('click',()=>{state.avoid.clear();save();renderOpts();update()});
+$('#suggestBtn').addEventListener('click',()=>{show('oppskrifter');if(location.hash&&location.hash!=='#oppskrifter')location.hash='oppskrifter';const{shown}=visible();const pool=shown.length?shown:R.map(r=>({r}));openRecipe(pool[Math.floor(Math.random()*pool.length)].r.id)});
+
+if(window.matchMedia('(max-width:960px)').matches)$('#filterBox').removeAttribute('open');
+renderOpts();renderChips();update();show(location.hash.slice(1));
+$('#heroImg').src=heroImage();
+</script>
+
+</body>
+</html>
