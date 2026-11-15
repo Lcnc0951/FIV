@@ -63,6 +63,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
 .task{border:2px dashed var(--line);border-radius:14px;padding:10px 14px;width:100%;max-width:360px}
 .task.ok{border-color:var(--kelp);color:var(--kelp)}
 .task.no{opacity:.7}
+.quote{font-family:var(--display);font-size:clamp(18px,4.6vw,22px);color:var(--foam);max-width:30ch;text-wrap:balance}
 .small{font-size:13px;color:rgba(234,252,255,.7)}
 
 /* Star card toast */
@@ -102,7 +103,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
     <div class="panel">
       <h1 class="title"><small>Gründerfisken Finn i</small>Super Gründer</h1>
       <p>Svøm gjennom havet, samle gullmynter og finn de skjulte gründerstjernene.</p>
-      <div class="row"><button class="btn" id="btnStart">Start spill</button><button class="btn ghost" id="btnColl">Gründerstien <span id="collCount">0/15</span></button></div>
+      <div class="row"><button class="btn" id="btnStart">Start spill</button><button class="btn ghost" id="btnColl">Gründerstien <span id="collCount">0/22</span></button></div>
       <div class="eyebrow">Velg nivå</div>
       <div class="levels" id="levelBtns"></div>
       <p class="how">Hold inne på skjermen, eller <kbd>mellomrom</kbd>, for å svømme opp. Slipp for å synke.</p>
@@ -116,7 +117,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
       <h2 id="inName">Havna</h2>
       <p id="inSub"></p>
       <div class="task" id="inTask"></div>
-      <p class="small">3 gründerstjerner gjemmer seg på nivået. Hver gir 250 poeng.</p>
+      <p class="small" id="inStars">Gründerstjerner gjemmer seg på nivået. Hver gir 250 poeng.</p>
       <button class="btn" id="btnGo">Svøm!</button>
     </div>
   </div>
@@ -151,6 +152,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
     <div class="panel">
       <div class="eyebrow">Alle fem nivåer fullført</div>
       <h1 class="title"><small>Gratulerer</small>Du er en Super Gründer!</h1>
+      <p class="quote">«La deg aldri begrense av andres begrensede fantasi»</p>
       <div class="stats" id="winStats"></div>
       <div class="row"><button class="btn" id="btnAgain">Spill igjen</button><button class="btn ghost" id="btnColl2">Se Gründerstien</button></div>
     </div>
@@ -178,11 +180,17 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
 // ---------- Data ----------
 const FOUNDERS=[
  ["Heinrich Arnold Thaulow",1808,"Sandefjords første lege. Grunnla Sandefjords Svovl- og Søbad, senere Sandefjord Kurbad, byens største bedrift på 1800-tallet."],
+ ["Christen Christensen",1845,"Skipsreder. Grunnla skipsverftet Framnæs Mekaniske Værksted, som ble Vestfolds største arbeidsplass. Introduserte verdens første flytende hvalkokeri."],
  ["Dorothea von der Lippe Christensen",1847,"Pioner og aktivist for praktiske reformer, undervisning og arbeid for kvinner."],
+ ["Johan Bryde",1858,"Skipsreder og pioner innen hvalfangst, med selskaper langs norskekysten og i Sør- og Øst-Afrika. Grunnla Gimle Oljemølle. Brydehvalen er oppkalt etter ham."],
+ ["Thor Dahl",1862,"Forretningsmann, skipsreder og filantrop. Grunnla rederiet Thor Dahl, var Sandefjords rikeste i sin tid og delte generøst av formuen."],
  ["Anders Børresen Hasle",1868,"Grunnlegger og industribygger som skapte arbeidsplasser i Sandefjord."],
+ ["Odd Gleditsch",1894,"Hvalfangeren som så behovet for skipsmaling og grunnla Jotun. Selskapet vokste senere med fabrikker over store deler av verden."],
  ["Olga Kulms",1895,"Hotelleier. Utviklet flere hoteller, blant dem Hotel Atlantic i Sandefjord, og støttet kulturlivet i byen."],
  ["Guttorm Gran sr.",1908,"Bryggerimester som satte Sandefjord på kartet gjennom utviklingen av Grans Bryggeri."],
+ ["Odd Gleditsch jr.",1929,"Andre generasjon industrileder i Jotun. Sto bak fusjonen som la grunnlaget for det moderne Jotun, og tok selskapet ut i verden."],
  ["Odd Andersen",1933,"Grunnlegger av Vestfold Fjellboring og en pioner innen sprengning og fjellboring."],
+ ["Leiv Wilhelm Eriksen",1939,"Sivilingeniør og entreprenør. Grunnla Norske Stålbygg og senere Cosmic Bygg. Drivkraft i idrettslaget Runar og Runarhallen."],
  ["Thorbjørn Hansen",1942,"Utviklet Thorstein Hansen AS til et av landets ledende entreprenørselskaper."],
  ["Hans Freddy Henriksen",1945,"Utvikler av Skiggerød og grunnlegger av Matbørsen. Har skapt hundrevis av arbeidsplasser."],
  ["Øivind Allum",1947,"Ingeniør. Etablerte Allum Engineering, Allum Marine og Allum Industrier. Med på å starte Sandefjord Fotball og Sandefjord Golf."],
@@ -191,19 +199,21 @@ const FOUNDERS=[
  ["Helge Krossøy",1958,"Gründer med sterkt engasjement for næringsliv og lokalsamfunn i Sandefjord."],
  ["Heidi Marie Petersen",1958,"Ingeniør. Grunnla Future Technology og er kåret til en av Norges 100 mektigste kvinner."],
  ["Carl Christian Fon",1963,"Maskinentreprenør. Grunnla Carl C. Fon og Fon Anlegg og bidro til utbyggingen av Sandefjord."],
+ ["Eric Sandtrø",1972,"Startet gründerreisen i ung alder og var en foregangsperson for store netthandelsbedrifter. Har satt Sandefjord på kartet som Norges netthandelshovedstad."],
  ["Øystein Seim",1974,"Entreprenør bak flere selskaper, blant dem Seim Musikk."]
 ];
+const STARS=[4,4,4,5,5], STAR0=STARS.map((_,i)=>STARS.slice(0,i).reduce((a,b)=>a+b,0)), NF=FOUNDERS.length;
 const LEVELS=[
  {name:"Havna",sub:"Rolig start langs brygga. Pass på korallene og krabbene.",len:4200,speed:150,theme:"harbor",
   segs:{wave:3,pillar:3,crab:2,chest:1},task:{type:"coins",n:40,text:"Samle minst 40 gullmynter"}},
  {name:"Tareskogen",sub:"Høy tare og svevende maneter. Ikke kom for nær!",len:4800,speed:165,theme:"kelp",
-  segs:{wave:2,pillar:3,jelly:3,crab:1,chest:1},task:{type:"stars",text:"Finn alle 3 gründerstjernene"}},
+  segs:{wave:2,pillar:3,jelly:3,crab:1,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}},
  {name:"Vraket",sub:"Et gammelt skipsvrak. Fiskekroker og kulefisk overalt.",len:5400,speed:180,theme:"wreck",
   segs:{wave:2,pillar:2,jelly:2,puffer:3,hook:3,chest:1},task:{type:"nohit",text:"Kom i mål uten å bli truffet"}},
  {name:"Dyphavet",sub:"Mørkt og dypt. Følg lyset og se opp for haier.",len:6000,speed:195,theme:"deep",
   segs:{wave:2,pillar:2,jelly:3,puffer:2,hook:2,shark:2,chest:1},task:{type:"coins",n:70,text:"Samle minst 70 gullmynter"}},
  {name:"Gründerrevet",sub:"Siste etappe! Alt du har lært, på en gang.",len:6800,speed:210,theme:"reef",
-  segs:{wave:2,pillar:3,jelly:2,puffer:2,hook:2,shark:2,crab:1,chest:1},task:{type:"stars",text:"Finn alle 3 gründerstjernene"}}
+  segs:{wave:2,pillar:3,jelly:2,puffer:2,hook:2,shark:2,crab:1,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}}
 ];
 const THEMES={
  harbor:{sky:["#bfefff","#7fd7f0"],top:"#4fc9da",bot:"#1a7f9d",sand:"#efd595",sand2:"#cfae6c",far:"rgba(20,70,90,.45)",mid:"#1f6d7d",pillar:["#ff8a6b","#e85a49"],ray:.12},
@@ -217,7 +227,7 @@ const WH=540, SURF=46, FLOOR=488;
 // ---------- Storage (best effort) ----------
 const store={get(k,d){try{const v=localStorage.getItem("sg_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
              set(k,v){try{localStorage.setItem("sg_"+k,JSON.stringify(v))}catch(e){}}};
-let best=store.get("best",0), unlocked=store.get("unlocked",1), found=new Set(store.get("found",[])), muted=store.get("muted",false);
+let best=store.get("best",0), unlocked=store.get("unlocked",1), found=new Set(store.get("found22",[])), muted=store.get("muted",false);
 
 // ---------- Audio ----------
 let AC=null;
@@ -269,7 +279,7 @@ function buildLevel(li){
   const rr=(a,b)=>a+R()*(b-a);
   const coin=(x,y)=>ents.push({k:"coin",x,y,r:11});
   const pool=[];for(const k in L.segs)for(let i=0;i<L.segs[k];i++)pool.push(k);
-  const starAt=[.27,.57,.85].map(f=>f*L.len);let si=0;
+  const NS=STARS[li],starAt=Array.from({length:NS},(_,k)=>(.16+k*.72/(NS-1))*L.len);let si=0;
   const powers=[{x:.4*L.len,type:"shield"}];if(li>=1)powers.push({x:.7*L.len,type:"magnet"});
   const seg={
     wave(x){const y0=rr(140,400),n=8;for(let i=0;i<n;i++)coin(x+i*34,y0+Math.sin(i*.8)*50);return x+n*34+110},
@@ -287,7 +297,7 @@ function buildLevel(li){
   };
   let x=650;
   while(x<L.len-450){
-    if(si<3&&x>starAt[si]){const y=rr(130,410);ents.push({k:"star",x:x+110,y,r:18,idx:li*3+si});
+    if(si<NS&&x>starAt[si]){const y=rr(130,410);ents.push({k:"star",x:x+110,y,r:18,idx:STAR0[li]+si});
       coin(x+70,y);coin(x+150,y);
       if(li>=1){const jy=y>270?y-115:y+115;ents.push({k:"jelly",x:x+110,by:jy,y:jy,amp:25,ph:R()*6,r:20})}
       si++;x+=270;continue}
@@ -305,7 +315,7 @@ function show(id){OVS.forEach(o=>$(o).hidden=o!==id);$("hud").hidden=!(G.state==
 
 function toMenu(){G.state="menu";G.li=0;G.ents=[];G.parts=[];G.cam=0;refreshMenu();show("ovMenu")}
 function refreshMenu(){
-  $("best").textContent=best;$("collCount").textContent=found.size+"/15";
+  $("best").textContent=best;$("collCount").textContent=found.size+"/"+NF;
   const wrap=$("levelBtns");wrap.innerHTML="";
   LEVELS.forEach((L,i)=>{const b=document.createElement("button");b.className="lv";b.textContent=i+1;b.title=L.name;
     b.setAttribute("aria-label","Nivå "+(i+1)+": "+L.name);if(i>=unlocked)b.disabled=true;
@@ -316,11 +326,11 @@ function startLevel(li){
   G.ents=buildLevel(li);G.parts=[];G.cam=0;G.finishX=L.len;
   Object.assign(G.fish,{y:270,vy:0,inv:0,shield:false,magnet:0,tilt:0});
   $("inEyebrow").textContent="Nivå "+(li+1)+" av "+LEVELS.length;$("inName").textContent=L.name;$("inSub").textContent=L.sub;
-  $("inTask").textContent="Oppgave: "+L.task.text+" (+500 bonus)";$("inTask").className="task";
+  $("inStars").textContent=STARS[li]+" gründerstjerner gjemmer seg på nivået. Hver gir 250 poeng.";$("inTask").textContent="Oppgave: "+L.task.text+" (+500 bonus)";$("inTask").className="task";
   G.state="intro";updHud(true);show("ovIntro");
 }
 function go(){G.state="play";G.holding=false;show(null);tone(523,.08,"triangle",.05);tone(784,.12,"triangle",.05,0,.08)}
-function taskOk(){const T=LEVELS[G.li].task;return T.type==="coins"?G.coins>=T.n:T.type==="stars"?G.stars>=3:G.hits===0}
+function taskOk(){const T=LEVELS[G.li].task;return T.type==="coins"?G.coins>=T.n:T.type==="stars"?G.stars>=STARS[G.li]:G.hits===0}
 function finishLevel(){
   const ok=taskOk(),L=LEVELS[G.li];
   const bonus=300+(ok?500:0)+G.lives*100;G.score+=bonus;
@@ -328,12 +338,12 @@ function finishLevel(){
   if(G.score>best){best=G.score;store.set("best",best)}
   sfx.win();
   if(G.li===LEVELS.length-1){G.state="win";
-    $("winStats").innerHTML=`<span>Totalt poeng</span><b>${G.score}</b><span>Rekord</span><b>${best}</b><span>Gründerstjerner samlet</span><b>${found.size} / 15</b>`;
+    $("winStats").innerHTML=`<span>Totalt poeng</span><b>${G.score}</b><span>Rekord</span><b>${best}</b><span>Gründerstjerner samlet</span><b>${found.size} / ${NF}</b>`;
     show("ovWin");return}
   G.state="done";
   $("dnEyebrow").textContent="Nivå "+(G.li+1)+" fullført";
-  $("dnTitle").textContent=G.stars===3?"Stjernesvømmer!":ok?"Bra svømt!":"I mål!";
-  $("dnStats").innerHTML=`<span>Gullmynter</span><b>${G.coins}</b><span>Gründerstjerner</span><b>${G.stars} / 3</b><span>Målbonus</span><b>+300</b><span>Liv igjen (${G.lives} × 100)</span><b>+${G.lives*100}</b><span>Poeng</span><b>${G.score}</b>`;
+  $("dnTitle").textContent=G.stars===STARS[G.li]?"Stjernesvømmer!":ok?"Bra svømt!":"I mål!";
+  $("dnStats").innerHTML=`<span>Gullmynter</span><b>${G.coins}</b><span>Gründerstjerner</span><b>${G.stars} / ${STARS[G.li]}</b><span>Målbonus</span><b>+300</b><span>Liv igjen (${G.lives} × 100)</span><b>+${G.lives*100}</b><span>Poeng</span><b>${G.score}</b>`;
   const tk=$("dnTask");tk.textContent=(ok?"✓ Oppgave løst: ":"✗ Ikke denne gangen: ")+L.task.text+(ok?" (+500)":"");tk.className="task "+(ok?"ok":"no");
   G.lives=Math.min(3,G.lives+1);
   show("ovDone");
@@ -406,7 +416,7 @@ function update(dt){
         break}
       case "star":
         if(dist2(e.x,e.y,fx,fy)<(fr+e.r+4)**2){e.dead=true;G.stars++;G.score+=250;sfx.star();burst(e.x,e.y,"#ffe9a8",26,220,.8,4);
-          floatText(e.x,e.y-20,"+250","#ffe08a");found.add(e.idx);store.set("found",[...found]);starToast(e.idx)}
+          floatText(e.x,e.y-20,"+250","#ffe08a");found.add(e.idx);store.set("found22",[...found]);starToast(e.idx)}
         break;
       case "power":
         if(dist2(e.x,e.y,fx,fy)<(fr+e.r)**2){e.dead=true;sfx.power();
@@ -695,10 +705,11 @@ $("btnMenu2").onclick=toMenu;$("btnMenu3").onclick=toMenu;
 $("btnRetry").onclick=()=>{G.score=G.startScore;G.lives=3;startLevel(G.li)};
 $("btnAgain").onclick=()=>{G.score=0;G.lives=3;startLevel(0)};
 let collBack="ovMenu";
+const lvOf=i=>{let l=0;while(l<STARS.length-1&&i>=STAR0[l+1])l++;return l};
 function openColl(from){collBack=from;const list=$("collList");list.innerHTML="";
   FOUNDERS.forEach((F,i)=>{const has=found.has(i),d=document.createElement("div");d.className="fc"+(has?"":" lock");
     d.innerHTML=`<svg viewBox="-24 -24 48 48" aria-hidden="true"><path d="M0-22 6.5-7 22.5-6.8 10 3.6 14 20 0 11 -14 20 -10 3.6 -22.5-6.8 -6.5-7Z" fill="${has?"#5b6066":"#334"}" stroke="${has?"#e2c27c":"#667"}" stroke-width="2"/></svg>
-      <div style="min-width:0"><div class="n">${has?F[0]+" · f. "+F[1]:"Ukjent gründer"}</div><div class="f">${has?F[2]:"Gjemt på nivå "+(Math.floor(i/3)+1)+" · "+LEVELS[Math.floor(i/3)].name}</div></div>`;
+      <div style="min-width:0"><div class="n">${has?F[0]+" · f. "+F[1]:"Ukjent gründer"}</div><div class="f">${has?F[2]:"Gjemt på nivå "+(lvOf(i)+1)+" · "+LEVELS[lvOf(i)].name}</div></div>`;
     list.appendChild(d)});
   OVS.forEach(o=>$(o).hidden=o!=="ovColl")}
 $("btnColl").onclick=()=>openColl("ovMenu");$("btnColl2").onclick=()=>openColl("ovWin");
