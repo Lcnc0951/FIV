@@ -3,6 +3,7 @@
 IBS-vennlige oppskrifter (lav-FODMAP, middelhav, vegetar, sjømat) som tilpasser seg det brukeren ikke tåler.
 
 ## Funksjoner
+- **I dag**: dagsform (fra «Veldig bra» til «Oppbluss»), plager og omstendigheter, forklaring på hva som skjer i kroppen, matforslag tilpasset dagsformen (skånemodus ved dårlige dager), «Hva har du lyst på?» og en 30-dagers trend. Kan spørre Claude om personlige forslag (`sample`).
 - **Oppskrifter (400)** som tilpasser seg det brukeren ikke tåler, med porsjonsskalering, kokemodus, «Legg i ukeplan» og «Jeg spiste dette».
 - **Ukeplan og handleliste**: fyll uka automatisk (fisk 3 ganger og vegetar 2 ganger), og få en handleliste med byttene innbakt.
 - **Magedagbok**: måltider, symptomer, Bristol-skala og stress. Viser en 14-dagersoversikt, mulige utløsere (2–24 timer etter måltid) og en rapport til ernæringsfysiolog.
@@ -14,6 +15,7 @@ IBS-vennlige oppskrifter (lav-FODMAP, middelhav, vegetar, sjømat) som tilpasser
 - `app.html` – selve appen (publiseres som artifact). `index.html` er samme app for vanlig nettleser.
 - `oppskrifter/*.txt` – alle oppskriftene i et enkelt tekstformat.
 - `tools/build.js` – leser oppskriftene, sjekker FODMAP-merkingen og lager `recipes.json`.
+- `dagsform.js` – I dag-siden: dagsform, forklaringer, forslag og trend.
 - `features.js` – ukeplan, dagbok, testfase og verktøy.
 - `tools/bundle.js` – bygger `recipes.json` og `features.js` inn i `app.html` og `index.html`.
 

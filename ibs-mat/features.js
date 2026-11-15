@@ -315,5 +315,4 @@ $('#lblCheck').addEventListener('click',renderLabel);
 $('#lbl').addEventListener('input',()=>{clearTimeout(window._lt);window._lt=setTimeout(renderLabel,400)});
 $('#lblExample').addEventListener('click',()=>{$('#lbl').value='Havregryn (45 %), glukosesirup, sjokolade (sukker, kakaosmør, helmelkpulver, emulgator (soyalecitin)), inulin, honning (3 %), mandler (2 %), salt, aroma';renderLabel()});
 document.querySelectorAll('[data-jump]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();$('#'+a.dataset.jump).scrollIntoView({behavior:'smooth',block:'start'})}));
-buildForm();syncType();$('#logTime').value=nowLocal();renderOut();renderDynamic();setSync('local');initCloud();
-show(location.hash.slice(1));
+buildForm();syncType();$('#logTime').value=nowLocal();renderOut();renderDynamic();setSync('local');const cloudReady=initCloud();
