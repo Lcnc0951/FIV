@@ -911,7 +911,7 @@ function drawArtFish(x,y,s,v,t){
   ctx.restore();
 }
 function drawOrangeArt(x,y,s,t){
-  ctx.save();ctx.translate(x,y+Math.sin(t*2)*5);ctx.rotate(Math.sin(t*2)*.05);ctx.scale(s,s);
+  ctx.save();ctx.translate(x,y+Math.sin(t*2)*5);ctx.rotate(Math.sin(t*2)*.05);ctx.scale(-s,s);
   ctx.save();ctx.translate(-18,0);ctx.rotate(Math.sin(t*9)*.28);
   let g=ctx.createLinearGradient(0,0,-26,0);g.addColorStop(0,"#ff9f1c");g.addColorStop(1,"#ffd23f");ctx.fillStyle=g;
   ctx.beginPath();ctx.moveTo(4,0);ctx.bezierCurveTo(-8,-8,-16,-22,-26,-20);ctx.quadraticCurveTo(-18,0,-26,20);ctx.bezierCurveTo(-16,22,-8,8,4,0);ctx.fill();
@@ -935,9 +935,9 @@ function drawWall(t){
   try{const sr=cv.getBoundingClientRect(),sl=document.querySelector(".slogan").getBoundingClientRect(),mc=document.querySelector(".menucard").getBoundingClientRect();
     if(land&&mc.width){ox=(mc.left-sr.left)/2;oy=(sl.bottom-sr.top+ch)/2}
     else if(mc.width){const top=sl.bottom-sr.top,bot=mc.top-sr.top;oy=bot-top>60?(top+bot)/2:Math.max(top+40,bot-20)}}catch(e){}
-  const c0=Math.floor(drift/cell)-1,c1=c0+Math.ceil(cw/cell)+3;
+  const c0=Math.floor(-drift/cell)-2,c1=c0+Math.ceil(cw/cell)+4;
   for(let r=0;r*rowH<ch+rowH;r++)for(let c=c0;c<=c1;c++){
-    const x=c*cell-drift+(r%2?cell/2:0),y=r*rowH+rowH*.6;
+    const x=c*cell+drift+(r%2?cell/2:0),y=r*rowH+rowH*.6;
     if((x-ox)**2+(y-oy)**2<(cell*.85)**2)continue;
     drawArtFish(x,y,s,(r*53+c*7+1000)%997,t);
   }
