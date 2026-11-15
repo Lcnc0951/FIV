@@ -123,6 +123,8 @@ export interface Profile {
   cycleStart?: string
   /** Kalorijustering fra vekttrenden (kcal per dag). */
   kcalOffset?: number
+  /** Korreksjonsfaktorer for kameraskann, lært fra målebånd (f.eks. waist: 1.05). */
+  calibration?: Partial<Record<'neck' | 'chest' | 'waist' | 'hip' | 'arm' | 'thigh', number>>
   /** Helsesjekk (PAR-Q+): svar per spørsmål. */
   health?: { answers: boolean[]; answeredAt: string }
 }
@@ -198,6 +200,8 @@ export interface BodyScan {
   weightKg: number
   source: 'camera' | 'lidar' | 'manual'
   measurements: ScanMeasurements
+  /** Rå kameramåling før kalibrering (brukes til å lære av målebåndet). */
+  raw?: ScanMeasurements
 }
 
 export interface Exercise {

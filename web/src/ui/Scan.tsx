@@ -5,6 +5,10 @@ import { analyzeFront, analyzeSide, combine, LM, type Detection, type ViewError,
 import { detectPose, loadImage, preloadPose } from '../scan/pose'
 import { lidarStatus, parseLidarJson, requestLidarScan } from '../scan/providers'
 import { Card, dateNb, FindingRow, Icon, nb, speak, Tag } from './kit'
+import { applyCalibration, CAL_LABEL, learnCalibration, type CalKey } from '../engine/extras'
+
+export const calText = (cal: Partial<Record<CalKey, number>>) =>
+  (Object.entries(cal) as [CalKey, number][]).map(([k, f]) => `${CAL_LABEL[k].toLowerCase()} ${f >= 1 ? '+' : ''}${((f - 1) * 100).toFixed(1).replace('.', ',')} %`).join(' · ')
 import { sortedScans, useApp } from './state'
 
 type View = 'front' | 'side'
@@ -21,16 +25,16 @@ const POSTURE: [keyof ScanMeasurements, string, string][] = [
 ]
 
 export function Scan() {
-  const { profile, data } = useApp()
+  const { profile, data, saveProfile } = useApp()
   const [mode, setMode] = useState<'start' | 'camera' | 'review'>('start')
   const [weight, setWeight] = useState(profile.weightKg)
-  const [result, setResult] = useState<{ m: ScanMeasurements; source: BodyScan['source'] } | null>(null)
+  const [result, setResult] = useState<{ m: ScanMeasurements; source: BodyScan['source']; raw?: ScanMeasurements } | null>(null)
   const [editing, setEditing] = useState<BodyScan | null>(null)
   useEffect(() => { preloadPose() }, [])
 
-  if (mode === 'camera') return <CameraFlow onCancel={() => setMode('start')} onDone={(m) => { setResult({ m, source: 'camera' }); setMode('review') }} />
+  if (mode === 'camera') return <CameraFlow onCancel={() => setMode('start')} onDone={(raw) => { setResult({ m: applyCalibration(raw, profile.calibration), raw, source: 'camera' }); setMode('review') }} />
   if (mode === 'review' && (result || editing)) {
-    return <Review weight={weight} initial={editing?.measurements ?? result!.m} source={editing?.source ?? result!.source} existing={editing ?? undefined}
+    return <Review weight={weight} initial={editing?.measurements ?? result!.m} raw={editing?.raw ?? result?.raw} source={editing?.source ?? result!.source} existing={editing ?? undefined}
       onDone={() => { setMode('start'); setResult(null); setEditing(null) }} />
   }
   return (
@@ -51,6 +55,12 @@ export function Scan() {
         <button className="btn primary big full" onClick={() => setMode('camera')}><Icon name="scan" /> Start skanning</button>
         <button className="btn ghost full" onClick={() => { setResult({ m: {}, source: 'manual' }); setMode('review') }}>Skriv inn mål med målebånd i stedet</button>
       </Card>
+      {Object.keys(profile.calibration ?? {}).length > 0 && (
+        <Card>
+          <div className="row between"><strong>Kalibrering mot målebånd</strong><button className="link small" onClick={() => saveProfile({ ...profile, calibration: {} }, false)}>Nullstill</button></div>
+          <p className="small muted">Kameraskann rettes automatisk: {calText(profile.calibration!)}.</p>
+        </Card>
+      )}
       <LidarCard weight={weight} onResult={(m) => { setResult({ m, source: 'lidar' }); setMode('review') }} enabled={profile.scanMethod === 'lidar'} />
       {data.scans.length > 0 && (
         <Card>
@@ -256,15 +266,20 @@ function Overlay({ cap }: { cap: Capture }) {
   return <canvas ref={ref} className="overlay" aria-label="Bildet med målinger tegnet inn" />
 }
 
-function Review({ initial, source, weight, existing, onDone }: { initial: ScanMeasurements; source: BodyScan['source']; weight: number; existing?: BodyScan; onDone: () => void }) {
-  const { addScan, updateScan, deleteScan, pd } = useApp()
+function Review({ initial, raw, source, weight, existing, onDone }: { initial: ScanMeasurements; raw?: ScanMeasurements; source: BodyScan['source']; weight: number; existing?: BodyScan; onDone: () => void }) {
+  const { addScan, updateScan, deleteScan, pd, profile, saveProfile } = useApp()
   const [m, setM] = useState<ScanMeasurements>(initial)
   const [w, setW] = useState(weight)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const a = analyzeBody({ ...pd, weightKg: w }, m)
   const save = async () => {
-    const s: BodyScan = existing ? { ...existing, measurements: m, weightKg: w } : { id: uid(), date: new Date().toISOString(), weightKg: w, source, measurements: m }
+    const s: BodyScan = existing ? { ...existing, measurements: m, weightKg: w } : { id: uid(), date: new Date().toISOString(), weightKg: w, source, measurements: m, raw }
     await (existing ? updateScan(s) : addScan(s))
+    // Lær av målebåndet: rettede tall gir korreksjon for neste kameraskann
+    if (raw && source === 'camera') {
+      const { cal, learned } = learnCalibration(raw, m, profile.calibration)
+      if (learned.length) await saveProfile({ ...profile, weightKg: w, calibration: cal }, false)
+    }
     onDone()
   }
   const num = (k: keyof ScanMeasurements, label: string, unit: string) => (
@@ -277,7 +292,9 @@ function Review({ initial, source, weight, existing, onDone }: { initial: ScanMe
     <div className="stack">
       <header className="page-head"><button className="btn ghost" onClick={onDone}><Icon name="back" /> Tilbake</button>
         <h1>{existing ? `Skann ${dateNb(existing.date)}` : source === 'manual' ? 'Mål med målebånd' : 'Resultat'}</h1>
-        {source !== 'manual' && <p className="muted small">Kontroller tallene. Har du målebånd, juster gjerne midje og hals — da blir fettprosenten mer presis.</p>}
+        {source === 'camera' && <p className="muted small">Har du målebånd? Mål midje, hals og gjerne hofte, og skriv inn tallene. Appen lærer av det og retter alle senere kameraskann automatisk.</p>}
+        {source === 'camera' && Object.keys(profile.calibration ?? {}).length > 0 && <p className="small"><Icon name="check" size={14} /> Kalibrert mot målebånd: {calText(profile.calibration!)}</p>}
+        {source === 'lidar' && <p className="muted small">Kontroller tallene fra LiDAR-skannet før du lagrer.</p>}
       </header>
       <Card>
         <h3>Kroppssammensetning</h3>

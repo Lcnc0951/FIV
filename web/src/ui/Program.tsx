@@ -4,6 +4,7 @@ import { alternatives, equipmentText, exercise, isCompound } from '../engine/lib
 import { MUSCLE_LABEL, MUSCLES, type Exercise } from '../engine/types'
 import { DrillRow } from './Body'
 import { WeekEditor } from './Week'
+import { estimateMinutes, supersets } from '../engine/extras'
 import { CycleBanner } from './Daily'
 import { Bar, Card, Icon, Sheet, Tag } from './kit'
 import { animationFor, StickFigure } from './StickFigure'
@@ -79,12 +80,23 @@ export function Program({ startWorkout }: { startWorkout: (d: WorkoutDay) => voi
 
 function DayView({ day, warmup, onBack, startWorkout }: { day: WorkoutDay; warmup: string[]; onBack: () => void; startWorkout: (d: WorkoutDay) => void }) {
   const [open, setOpen] = useState<Prescription | null>(null)
+  const { profile } = useApp()
+  const groups = supersets(day, profile.sessionMinutes)
+  const singles = day.exercises.map((x) => ({ label: '', items: [x], restSeconds: x.restSeconds }))
   return (
     <div className="stack">
       <header className="page-head"><button className="btn ghost" onClick={onBack}><Icon name="back" /> Program</button><h1>{day.name}</h1><p className="muted">{day.focus}</p></header>
       <Card><h3>Oppvarming</h3><ul className="small">{warmup.map((w) => <li key={w}>{w}</li>)}</ul></Card>
+      {groups.length < day.exercises.length && (
+        <p className="adjust small"><Icon name="info" size={14} /> {profile.sessionMinutes} min-økt: øvelsene er satt sammen i supersett. Ca. {estimateMinutes(groups)} min i stedet for {estimateMinutes(singles)}.</p>
+      )}
       <div className="stack-s">
-        {day.exercises.map((p) => <ExerciseRow key={p.id} p={p} onClick={() => setOpen(p)} />)}
+        {groups.map((g) => (
+          <div key={g.label} className={g.items.length > 1 ? 'superset' : 'stack-s'}>
+            {g.items.length > 1 && <div className="superset-head"><strong>Supersett {g.label}</strong><span className="muted small">{Math.round(g.restSeconds / 15) * 15} sek pause etter begge</span></div>}
+            {g.items.map((p) => <ExerciseRow key={p.id} p={p} onClick={() => setOpen(p)} />)}
+          </div>
+        ))}
       </div>
       <button className="btn primary big full" onClick={() => startWorkout(day)}><Icon name="play" /> Start økta</button>
       <ExerciseSheet p={open} onClose={() => setOpen(null)} />

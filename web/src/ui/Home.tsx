@@ -7,6 +7,7 @@ import { avg, PHYSIQUE_INFO } from '../engine/types'
 import { Card, FindingRow, Icon, Metric, nb, dateNb } from './kit'
 import { TodayCard, type StartSession } from './Week'
 import { CheckinCard, HealthCheck, SleepCard, WeightCard } from './Daily'
+import { ReportCard } from './Report'
 import { sortedScans, useApp } from './state'
 import { FatScale } from './Body'
 
@@ -38,6 +39,7 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
       <HealthCheck />
       <CheckinCard />
       <TodayCard start={start} />
+      <ReportCard />
       <WeightCard compact />
       <SleepCard />
 

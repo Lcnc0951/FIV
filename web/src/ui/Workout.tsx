@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { suggest } from '../engine/coach'
 import type { Prescription, WorkoutDay } from '../engine/generator'
 import { exercise } from '../engine/library'
+import { estimateMinutes, supersets } from '../engine/extras'
 import { uid, type SetLog } from '../engine/types'
 import { Card, Icon, nb, speak, Tag } from './kit'
 import { ExerciseSheet } from './Program'
@@ -13,6 +14,10 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
   const { data, profile, logWorkout } = useApp()
   const [logs, setLogs] = useState<Record<string, SetLog[]>>({})
   const [restUntil, setRestUntil] = useState<number | null>(null)
+  const [restLabel, setRestLabel] = useState('Pause')
+  const groups = supersets(day, profile.sessionMinutes)
+  const savedMin = Math.max(0, estimateMinutes(day.exercises.map((x) => ({ label: '', items: [x], restSeconds: x.restSeconds }))) - estimateMinutes(groups))
+  const groupOf = (id: string) => groups.find((g) => g.items.some((x) => x.id === id))!
   const [now, setNow] = useState(Date.now())
   const [info, setInfo] = useState<Prescription | null>(null)
   const dumbbells = activeLocation(profile).equipment.includes('dumbbells') ? activeLocation(profile).dumbbellWeights : []
@@ -30,8 +35,18 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
 
   const add = (p: Prescription, s: SetLog) => {
     const list = logs[p.id] ?? []
+    const count = list.length + 1
     setLogs({ ...logs, [p.id]: [...list, s] })
-    if (list.length + 1 < p.sets) setRestUntil(Date.now() + p.restSeconds * 1000)
+    const g = groupOf(p.id)
+    const partner = g.items.find((x) => x.id !== p.id)
+    if (partner && (logs[partner.id]?.length ?? 0) < Math.min(count, partner.sets)) {
+      // Supersett: rett over til den andre øvelsen
+      setRestLabel(`Bytt til ${exercise(partner.exerciseId)?.name ?? 'neste øvelse'}`)
+      setRestUntil(Date.now() + 20_000)
+    } else if (count < Math.max(...g.items.map((x) => x.sets))) {
+      setRestLabel(partner ? 'Pause etter begge' : 'Pause')
+      setRestUntil(Date.now() + g.restSeconds * 1000)
+    }
   }
   const update = (p: Prescription, i: number, s: SetLog) => setLogs({ ...logs, [p.id]: (logs[p.id] ?? []).map((x, k) => (k === i ? s : x)) })
   const remove = (p: Prescription, i: number) => setLogs({ ...logs, [p.id]: (logs[p.id] ?? []).filter((_, k) => k !== i) })
@@ -57,11 +72,17 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
       {volumeFactor < 1 && <p className="adjust small"><Icon name="info" size={14} /> Lettere økt i dag: {Math.round(volumeFactor * 100)} % av settene.</p>}
       {restUntil && (
         <div className="rest-bar" role="timer" aria-live="polite">
-          <Icon name="timer" /> Pause <strong className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</strong>
+          <Icon name="timer" /> {restLabel} <strong className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</strong>
           <button className="btn small" onClick={() => setRestUntil(null)}>Hopp over</button>
         </div>
       )}
-      {day.exercises.map((p) => {
+      {groups.length < day.exercises.length && (
+        <p className="adjust small"><Icon name="info" size={14} /> Supersett: ta ett sett av hver øvelse i paret, så pause. Sparer ca. {savedMin} min.</p>
+      )}
+      {groups.map((g) => (
+      <div key={g.label} className={g.items.length > 1 ? 'superset' : 'stack'}>
+      {g.items.length > 1 && <div className="superset-head"><strong>Supersett {g.label}</strong><span className="muted small">veksle mellom øvelsene · {Math.round(g.restSeconds / 15) * 15} sek pause etter begge</span></div>}
+      {g.items.map((p) => {
         const e = exercise(p.exerciseId)
         if (!e) return null
         const sug = suggest(p, last(e.id), dumbbells)
@@ -94,6 +115,8 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
           </Card>
         )
       })}
+      </div>
+      ))}
       <button className="btn primary big full" disabled={!anyLogged} onClick={finish}>Fullfør økta</button>
       <ExerciseSheet p={info} onClose={() => setInfo(null)} allowSwap={false} />
     </div>

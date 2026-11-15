@@ -299,3 +299,11 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .bubble.pt { align-self: flex-start; background: var(--card-2); border-bottom-left-radius: 4px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips button { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 6px 12px; font-size: 0.82rem; }
+.superset { border-left: 3px solid var(--accent); padding-left: 10px; display: flex; flex-direction: column; gap: 8px; }
+.superset-head { display: flex; flex-direction: column; gap: 0; }
+.superset-head strong { font-family: var(--display); font-size: 1.05rem; }
+.report-headline { font-family: var(--display); font-size: 1.35rem; font-weight: 700; margin: 0; }
+.pt-note { display: flex; gap: 8px; align-items: flex-start; background: var(--card-2); border-radius: 10px; padding: 10px 12px; margin: 0; font-size: 0.92rem; }
+.pt-note svg { color: var(--accent); flex: none; margin-top: 2px; }
+.small-seg { padding: 2px; }
+.small-seg button { min-height: 30px; padding: 4px 10px; font-size: 0.78rem; flex: none; }
