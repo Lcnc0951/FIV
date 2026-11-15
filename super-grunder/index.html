@@ -34,7 +34,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .coinico{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,var(--gold) 45%,var(--gold-deep));box-shadow:inset 0 0 0 2px #b8700a}
 #score{font-family:var(--display);font-size:20px;min-width:4ch;text-align:right}
 .hbtn{pointer-events:auto;width:38px;height:38px;border-radius:12px;border:2px solid var(--line);background:rgba(6,28,38,.55);color:var(--foam);font-weight:800;font-size:15px;display:grid;place-items:center}
-@media (max-width:520px){#score{font-size:17px}#lvlname{font-size:13px}#hearts{font-size:17px}}
+@media (max-width:520px){.hbtn{width:34px;height:34px}#hud{gap:6px;flex-wrap:wrap;row-gap:4px}#lvlbox{order:10;flex-basis:100%}#hud>.grp:nth-last-of-type(1){margin-left:auto}#score{font-size:17px}#lvlname{font-size:13px}#hearts{font-size:17px}}
+
+#zoomBox{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px}
+#zoomBox .hbtn{font-size:22px;width:42px;height:42px}
 
 /* Overlays */
 .ov{position:absolute;inset:0;display:grid;place-items:center;overflow-y:auto;
@@ -156,9 +159,11 @@ details.more[open] summary::after{content:" ▴"}
     <div id="lvlbox"><div id="lvlname">Nivå 1</div><div id="prog"><i></i></div></div>
     <div class="grp"><span class="coinico" aria-hidden="true"></span><span id="coins">0</span></div>
     <div class="grp"><span id="score">0</span></div>
-    <button class="hbtn" id="btnSound" aria-label="Lyd av/på">♪</button>
+        <button class="hbtn" id="btnSound" aria-label="Lyd av/på">♪</button>
     <button class="hbtn" id="btnPause" aria-label="Pause">II</button>
   </div>
+
+  <div id="zoomBox" hidden><button class="hbtn" id="btnZoomIn" aria-label="Zoom inn">+</button><button class="hbtn" id="btnZoomOut" aria-label="Zoom ut">−</button></div>
 
   <div class="ov" id="ovMenu">
     <div class="menuwrap">
@@ -349,11 +354,14 @@ const sfx={
 
 // ---------- Canvas ----------
 const cv=document.getElementById("cv"), ctx=cv.getContext("2d");
-let dpr=1,cw=0,ch=0,S=1,VW=420,OY=0;
+let dpr=1,cw=0,ch=0,S=1,VW=420,OY=0,baseS=1,Z=clamp0(+store.get("zoom",1)||1),camY=0;
+function clamp0(z){return Math.min(2.2,Math.max(.6,z))}
+function applyZoom(){S=baseS*Z;VW=cw/S}
+function setZoom(z){Z=clamp0(z);store.set("zoom",Z);applyZoom()}
 function resize(){
   const r=cv.getBoundingClientRect();dpr=Math.min(2,window.devicePixelRatio||1);
   cw=Math.max(1,r.width);ch=Math.max(1,r.height);cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
-  S=Math.min(ch/WH,cw/420);VW=cw/S;OY=Math.max(0,(ch-WH*S)/2);
+  baseS=Math.min(ch/WH,cw/420);applyZoom();updCam(1);
 }
 addEventListener("resize",resize);resize();
 // iOS often reports the old size right after rotating, so re-measure a few times and also check every frame
@@ -373,7 +381,7 @@ const dist2=(ax,ay,bx,by)=>(ax-bx)**2+(ay-by)**2;
 const G={state:"menu",li:0,score:0,startScore:0,lives:3,coins:0,stars:0,hits:0,starNames:[],team:[],trail:[],runStars:0,startRunStars:0,mentor:0,tipI:0,tipT:0,whale:null,chestsTotal:0,chestsOpened:0,
   t:0,cam:0,shake:0,holding:false,ents:[],parts:[],finishX:0,
   fish:{y:270,vy:0,inv:0,shield:false,magnet:0,tilt:0}};
-const fishOff=()=>Math.min(170,VW*.26);
+const fishOff=()=>VW/2;
 const EVO=[3,6],stageOf=n=>n>=EVO[1]?2:n>=EVO[0]?1:0,STAGE_NAME=["Vanlig fisk","Gründerfisk","Superfisk"];
 const OBST=new Set(["pillar","jelly","crab","puffer","hook","blue","shark"]);
 
@@ -426,7 +434,7 @@ function buildLevel(li){
 // ---------- Flow ----------
 const $=id=>document.getElementById(id);
 const OVS=["ovMenu","ovIntro","ovPause","ovDone","ovOver","ovMyStar","ovColl"];
-function show(id){OVS.forEach(o=>$(o).hidden=o!==id);$("hud").hidden=!(G.state==="play"||G.state==="intro"||G.state==="pause")}
+function show(id){OVS.forEach(o=>$(o).hidden=o!==id);$("hud").hidden=$("zoomBox").hidden=!(G.state==="play"||G.state==="intro"||G.state==="pause")}
 
 function toMenu(){G.state="menu";G.li=0;G.team=[];G.mentor=0;G.whale=null;G.ents=[];G.parts=[];G.cam=0;refreshMenu();show("ovMenu")}
 const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -537,7 +545,12 @@ function callWhale(){
 }
 
 // ---------- Update ----------
+function updCam(k){
+  const VH=ch/S,target=VH>=WH?-(VH-WH)/2:clamp((()=>{try{return G.fish.y}catch(e){return 270}})()-VH/2,0,WH-VH);
+  camY+=(target-camY)*Math.min(1,k);OY=-camY*S;
+}
 function update(dt){
+  updCam(dt*7);
   G.t+=dt;G.trail.unshift(G.fish.y);if(G.trail.length>70)G.trail.length=70;
   if(toastT>0){toastT-=dt;if(toastT<=0)$("toast").classList.remove("show")}
   // ambient bubbles
@@ -856,7 +869,7 @@ function drawFinish(e,t){
 // ---------- Drawing: world ----------
 function tiles(p,T,fn){const off=G.cam*p,i0=Math.floor(off/T)-1,i1=Math.ceil((off+VW)/T)+1;for(let i=i0;i<=i1;i++)fn(i*T-off,i)}
 function drawBackground(th,theme,t){
-  const top=-OY/S-2,bottom=WH+OY/S+2;
+  const top=camY-2,bottom=camY+ch/S+2;
   // sky
   let g=ctx.createLinearGradient(0,top,0,SURF);g.addColorStop(0,th.sky[0]);g.addColorStop(1,th.sky[1]);ctx.fillStyle=g;ctx.fillRect(0,top,VW,SURF-top+2);
   // water
@@ -973,7 +986,7 @@ function render(){
   if(theme==="deep"){const fxs=fishOff(),g=ctx.createRadialGradient(fxs,G.fish.y,70,fxs+60,G.fish.y,Math.max(360,VW*.45));
     g.addColorStop(0,"rgba(2,8,20,0)");g.addColorStop(1,"rgba(2,8,20,.82)");ctx.fillStyle=g;ctx.fillRect(-20,SURF,VW+40,FLOOR-SURF+40)}
   drawSurface(th,t);
-  if(G.evoFlash>0){ctx.fillStyle="rgba(255,240,190,"+(G.evoFlash/.6*.55)+")";ctx.fillRect(-20,-OY/S,VW+40,WH+2*OY/S)}
+  if(G.evoFlash>0){ctx.fillStyle="rgba(255,240,190,"+(G.evoFlash/.6*.55)+")";ctx.fillRect(-20,camY,VW+40,ch/S)}
   // shark warnings
   if(G.state==="play")for(const e of G.ents){if(e.k==="shark"&&!e.dead){const dx=e.x-G.cam;if(dx>VW+10&&dx<VW+650){const a=.6+.4*Math.sin(t*14);
     ctx.fillStyle="rgba(255,80,60,"+a+")";ctx.beginPath();ctx.arc(VW-22,e.y,15,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="20px 'Lilita One',sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("!",VW-22,e.y+1);ctx.textBaseline="alphabetic"}}}
@@ -993,10 +1006,20 @@ function press(e){
   if(G.state==="play"){G.holding=true;e.preventDefault&&e.preventDefault()}
 }
 stage.addEventListener("pointerdown",press);
-["pointerup","pointercancel","pointerleave"].forEach(ev=>stage.addEventListener(ev,()=>G.holding=false));
+const ptrs=new Map();let pinch=null;
+const pdist=()=>{const [a,b]=[...ptrs.values()];return Math.hypot(a.x-b.x,a.y-b.y)||1};
+stage.addEventListener("pointerdown",e=>{if(e.target.closest&&e.target.closest("button,.panel"))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){pinch={d:pdist(),z:Z};G.holding=false}});
+stage.addEventListener("pointermove",e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size>=2){setZoom(pinch.z*pdist()/pinch.d);G.holding=false}});
+["pointerup","pointercancel","pointerleave"].forEach(ev=>stage.addEventListener(ev,e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;G.holding=false}));
+stage.addEventListener("wheel",e=>{if(G.state==="menu")return;e.preventDefault();setZoom(Z*(e.deltaY<0?1.1:1/1.1))},{passive:false});
+$("btnZoomIn").onclick=()=>setZoom(Z*1.2);$("btnZoomOut").onclick=()=>setZoom(Z/1.2);
 addEventListener("keydown",e=>{
   if(e.target&&e.target.tagName==="INPUT"){if(e.code==="Enter")$("btnMyStar").click();return}
   if(e.code==="Space"||e.code==="ArrowUp"||e.code==="KeyW"){e.preventDefault();if(G.state==="intro")go();if(G.state==="play")G.holding=true}
+  if(e.key==="+"||e.code==="NumpadAdd"||e.code==="Equal")setZoom(Z*1.2);
+  if(e.key==="-"||e.code==="NumpadSubtract"||e.code==="Minus")setZoom(Z/1.2);
   if(e.code==="KeyP"||e.code==="Escape"){G.state==="play"?pause():G.state==="pause"&&resume()}
   if(e.code==="Enter"&&G.state==="intro")go();
 });
