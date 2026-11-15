@@ -85,6 +85,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
 .myplaque:empty{display:none}
 @media (min-width:760px) and (max-height:560px){.panel{width:min(720px,100%)}}
 @media (max-height:560px){.panel{padding:14px 18px;gap:9px}.title{font-size:clamp(30px,8vh,46px)}h2{font-size:26px}p{font-size:14px}.btn{padding:10px 18px;font-size:16px}.helpers{font-size:12px}.coll{max-height:42vh}}
+.evo{font-weight:800;color:#ffd9a0;font-size:14px}
 .small{font-size:13px;color:rgba(234,252,255,.7)}
 
 /* Star card toast */
@@ -113,6 +114,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
 
   <div id="hud" hidden>
     <div class="grp" id="hearts" aria-label="Liv"></div>
+    <div class="grp" title="Stjerner mot Superfisk" id="evoBox"><span style="color:var(--gold)">★</span><span id="evo">0</span></div>
     <div class="grp" title="Teamet ditt"><span class="teamico" aria-hidden="true"></span><span id="team">0</span></div>
     <div id="lvlbox"><div id="lvlname">Nivå 1</div><div id="prog"><i></i></div></div>
     <div class="grp"><span class="coinico" aria-hidden="true"></span><span id="coins">0</span></div>
@@ -148,6 +150,7 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
       <h2 id="inName">Havna</h2>
       <p id="inSub"></p>
       <div class="task" id="inTask"></div>
+      <p class="evo" id="inEvo"></p>
       <p class="small" id="inStars">Gründerstjerner gjemmer seg på nivået. Hver gir 250 poeng.</p>
       <button class="btn" id="btnGo">Svøm!</button>
     </div>
@@ -318,10 +321,11 @@ function circRect(cx,cy,r,x,y,w,h){const nx=clamp(cx,x,x+w),ny=clamp(cy,y,y+h);r
 const dist2=(ax,ay,bx,by)=>(ax-bx)**2+(ay-by)**2;
 
 // ---------- Game state ----------
-const G={state:"menu",li:0,score:0,startScore:0,lives:3,coins:0,stars:0,hits:0,starNames:[],team:[],trail:[],mentor:0,tipI:0,tipT:0,whale:null,chestsTotal:0,chestsOpened:0,
+const G={state:"menu",li:0,score:0,startScore:0,lives:3,coins:0,stars:0,hits:0,starNames:[],team:[],trail:[],runStars:0,startRunStars:0,mentor:0,tipI:0,tipT:0,whale:null,chestsTotal:0,chestsOpened:0,
   t:0,cam:0,shake:0,holding:false,ents:[],parts:[],finishX:0,
   fish:{y:270,vy:0,inv:0,shield:false,magnet:0,tilt:0}};
 const fishOff=()=>Math.min(170,VW*.26);
+const EVO=[3,6],stageOf=n=>n>=EVO[1]?2:n>=EVO[0]?1:0,STAGE_NAME=["Vanlig fisk","Gründerfisk","Superfisk"];
 const OBST=new Set(["pillar","jelly","crab","puffer","hook","blue","shark"]);
 
 // ---------- Level generation ----------
@@ -400,14 +404,15 @@ function refreshMenu(){
     b.onclick=()=>newRun(i);wrap.appendChild(b)}
   wrap.scrollTop=wrap.scrollHeight;
 }
-function newRun(li){G.score=0;G.lives=3;G.team=[];startLevel(li)}
+function newRun(li){G.score=0;G.lives=3;G.team=[];G.runStars=0;startLevel(li)}
 function startLevel(li){
-  G.li=li;const L=LV(li);G.startScore=G.score;G.coins=0;G.stars=0;G.hits=0;G.starNames=[];G.mentor=0;G.whale=null;
+  G.li=li;const L=LV(li);G.startScore=G.score;G.startRunStars=G.runStars;G.coins=0;G.stars=0;G.hits=0;G.starNames=[];G.mentor=0;G.whale=null;
   G.ents=buildLevel(li);G.parts=[];G.cam=0;G.finishX=L.len;G.chestsTotal=G.ents.filter(e=>e.k==="chest").length;G.chestsOpened=0;
   Object.assign(G.fish,{y:270,vy:0,inv:0,shield:false,magnet:0,tilt:0});
   $("inEyebrow").textContent="Nivå "+(li+1)+" · GründerLab-camp "+L.camp+" · fase "+(li%5+1)+" av 5";$("inName").textContent=L.name;$("inSub").textContent=L.sub;
   $("inStars").textContent=(li<NF/2?"2 gründerstjerner":"2 bonusstjerner")+" gjemmer seg på nivået. Hver gir 250 poeng.";
   $("inTask").textContent="Oppgave: "+L.task.text+" (+500 bonus)";$("inTask").className="task";
+  const sg=stageOf(G.runStars);$("inEvo").textContent=sg>=2?"Finn er en Superfisk! Superkraft: trekker til seg mynter i nærheten.":`Finn er ${sg?"en Gründerfisk med kappe":"en vanlig fisk"}. ${EVO[sg]-G.runStars} stjerner til, så blir han ${STAGE_NAME[sg+1]}!`;
   G.state="intro";updHud(true);show("ovIntro");
 }
 function go(){G.state="play";G.holding=false;show(null);tone(523,.08,"triangle",.05);tone(784,.12,"triangle",.05,0,.08)}
@@ -440,11 +445,11 @@ function resume(){if(G.state!=="pause")return;G.state="play";G.holding=false;sho
 let lastHud="";
 function updHud(force){
   const p=clamp(G.cam/(G.finishX-fishOff()||1),0,1);
-  const key=G.lives+"|"+G.coins+"|"+G.score+"|"+G.li+"|"+(p*100|0)+"|"+G.fish.shield+"|"+G.team.length;
+  const key=G.lives+"|"+G.coins+"|"+G.score+"|"+G.li+"|"+(p*100|0)+"|"+G.fish.shield+"|"+G.team.length+"|"+G.runStars;
   if(!force&&key===lastHud)return;lastHud=key;
   $("hearts").innerHTML=[0,1,2].map(i=>`<span class="${i<G.lives?"":"off"}">♥</span>`).join("")+(G.fish.shield?' <span style="color:#8fe3ff">◯</span>':"");
   $("coins").textContent=G.coins;$("score").textContent=G.score;
-  $("team").textContent=G.team.length;$("lvlname").textContent=(G.li+1)+" · "+LV(G.li).name;$("prog").firstElementChild.style.width=(p*100)+"%";
+  $("team").textContent=G.team.length;{const sg=stageOf(G.runStars);$("evo").textContent=sg>=2?G.runStars+" SUPER":G.runStars+"/"+EVO[sg]}$("lvlname").textContent=(G.li+1)+" · "+LV(G.li).name;$("prog").firstElementChild.style.width=(p*100)+"%";
   $("btnSound").textContent=muted?"×":"♪";
 }
 
@@ -468,6 +473,12 @@ function hurt(){
   if(G.team.length){G.team.pop();f.inv=1.3;G.shake=.2;sfx.pop();burst(fx-30,f.y,"#ffb347",16,170);floatText(fx,f.y-34,"Teamet tok støyten!","#ffd9a0");return}
   G.lives--;f.inv=1.6;G.shake=.35;sfx.hit();burst(fx,f.y,"#ff8a7a",16,180);
   if(G.lives<=0){gameOver()}
+}
+function evolve(sg){
+  const f=G.fish,fx=G.cam+fishOff();f.inv=Math.max(f.inv,1.2);G.evoFlash=.6;
+  burst(fx,f.y,"#ffe08a",40,280,1,5);burst(fx,f.y,"#e63946",20,220,.9,4);
+  [523,659,784,1047,1319,1568].forEach((q,i)=>tone(q,.12,"triangle",.06,0,i*.07));
+  setTimeout(()=>floatText(G.cam+fishOff(),G.fish.y-50,sg>=2?"SUPERFISK!":"Gründerfisk med kappe!","#ffd166"),250);
 }
 function callWhale(){
   const L=LV(G.li),fx=G.cam+fishOff();
@@ -503,17 +514,19 @@ function update(dt){
   if(f.inv>0)f.inv-=dt;if(f.magnet>0)f.magnet-=dt;if(G.shake>0)G.shake-=dt;
   const fx=G.cam+fishOff(),fy=f.y,fr=15;
   if(G.holding&&Math.random()<dt*14)bubble(fx-20,fy+4,false);
+  if(G.evoFlash>0)G.evoFlash-=dt;
+  if(stageOf(G.runStars)>=2&&Math.random()<dt*10)G.parts.push({x:fx-40,y:fy+(Math.random()-.5)*20,vx:-60,vy:(Math.random()-.5)*30,life:.6,max:.6,col:"#ffe08a",size:2.2});
   for(const e of G.ents){
     if(e.dead)continue;
     if(e.x<G.cam-260){e.dead=true;continue}
     if(e.x>G.cam+VW+700&&e.k!=="shark")continue;
     switch(e.k){
       case "coin":{
-        if(f.magnet>0&&dist2(e.x,e.y,fx,fy)<200*200){const a=Math.atan2(fy-e.y,fx-e.x);e.x+=Math.cos(a)*420*dt;e.y+=Math.sin(a)*420*dt}
+        if((f.magnet>0&&dist2(e.x,e.y,fx,fy)<200*200)||(stageOf(G.runStars)>=2&&dist2(e.x,e.y,fx,fy)<100*100)){const a=Math.atan2(fy-e.y,fx-e.x);e.x+=Math.cos(a)*420*dt;e.y+=Math.sin(a)*420*dt}
         if(dist2(e.x,e.y,fx,fy)<(fr+e.r)**2){e.dead=true;G.coins++;G.score+=10+2*G.team.length;sfx.coin();burst(e.x,e.y,"#ffd84d",6,90,.4,3)}
         break}
       case "star":
-        if(dist2(e.x,e.y,fx,fy)<(fr+e.r+4)**2){e.dead=true;G.stars++;G.score+=250;sfx.star();burst(e.x,e.y,"#ffe9a8",26,220,.8,4);
+        if(dist2(e.x,e.y,fx,fy)<(fr+e.r+4)**2){e.dead=true;G.stars++;const st0=stageOf(G.runStars);G.runStars++;if(stageOf(G.runStars)>st0)evolve(stageOf(G.runStars));G.score+=250;sfx.star();burst(e.x,e.y,"#ffe9a8",26,220,.8,4);
           floatText(e.x,e.y-20,"+250","#ffe08a");if(e.idx>=0){found.add(e.idx);store.set("found22",[...found])}starToast(e.idx)}
         break;
       case "power":
@@ -565,7 +578,8 @@ function update(dt){
 
 // ---------- Drawing: shapes ----------
 function starPath(r1,r2){ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?r2:r1,a=-Math.PI/2+i*Math.PI/5;ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r)}ctx.closePath()}
-function drawFish(x,y,tilt,t,blink,sc=1,mini=false){
+function drawFish(x,y,tilt,t,blink,sc=1,mini=false,stage=0){
+  if(stage>=2){ctx.save();const a=ctx.createRadialGradient(x,y,8,x,y,52);a.addColorStop(0,"rgba(255,220,110,.45)");a.addColorStop(1,"rgba(255,220,110,0)");ctx.fillStyle=a;ctx.beginPath();ctx.arc(x,y,52+Math.sin(t*6)*3,0,Math.PI*2);ctx.fill();ctx.restore()}
   ctx.save();ctx.translate(x,y);ctx.rotate(tilt);ctx.scale(sc,sc);
   if(blink&&Math.floor(t*14)%2){ctx.globalAlpha=.35}
   const wag=Math.sin(t*(G.holding?18:9))*.35;
@@ -578,6 +592,14 @@ function drawFish(x,y,tilt,t,blink,sc=1,mini=false){
   // dorsal fin
   ctx.fillStyle="#ff8a1a";ctx.beginPath();ctx.moveTo(-14,-12);ctx.bezierCurveTo(-10,-30,6,-34,12,-15);ctx.closePath();ctx.fill();
   ctx.strokeStyle="rgba(200,70,0,.4)";ctx.lineWidth=1;for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(-10+k*6,-13);ctx.lineTo(-8+k*5,-26+k*2);ctx.stroke()}
+  if(stage>=1){ // cape tied behind the head, flapping backwards
+    const len=stage>=2?34:16,f1=Math.sin(t*13)*(stage>=2?7:4),f2=Math.sin(t*13+1.3)*(stage>=2?8:5);
+    const cg=ctx.createLinearGradient(8,0,-40-len,0);cg.addColorStop(0,"#e63946");cg.addColorStop(1,"#9d0208");ctx.fillStyle=cg;
+    ctx.beginPath();ctx.moveTo(10,-16);ctx.bezierCurveTo(-4,-30+f1*.3,-24-len*.5,-30+f1,-38-len,-22+f1);
+    ctx.quadraticCurveTo(-32-len,-6+f2*.5,-44-len,10+f2);ctx.bezierCurveTo(-28-len*.4,8+f2*.6,-10,2,4,-4);ctx.closePath();ctx.fill();
+    ctx.strokeStyle="rgba(255,255,255,.18)";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(4,-14);ctx.quadraticCurveTo(-16-len*.5,-14+f1*.6,-34-len,-4+f2*.6);ctx.stroke();
+    ctx.fillStyle="#ffc93c";ctx.beginPath();ctx.arc(7,-12,3,0,Math.PI*2);ctx.fill();
+  }
   // body
   const g=ctx.createRadialGradient(4,-6,3,0,0,28);g.addColorStop(0,"#ffb23a");g.addColorStop(.6,"#ff7d14");g.addColorStop(1,"#e9560a");
   ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(26,2);ctx.bezierCurveTo(24,-16,6,-19,-6,-16);ctx.bezierCurveTo(-18,-12,-22,-4,-22,0);ctx.bezierCurveTo(-22,6,-16,14,-4,16);ctx.bezierCurveTo(10,18,24,14,26,2);ctx.fill();
@@ -588,6 +610,12 @@ function drawFish(x,y,tilt,t,blink,sc=1,mini=false){
   // fins
   ctx.fillStyle="#ff9b2e";ctx.save();ctx.translate(2,6);ctx.rotate(Math.sin(t*10)*.4+.5);ctx.beginPath();ctx.ellipse(-6,0,9,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
   ctx.fillStyle="#f06a10";ctx.beginPath();ctx.moveTo(-4,15);ctx.quadraticCurveTo(-8,24,0,22);ctx.quadraticCurveTo(2,18,4,16);ctx.fill();
+  if(stage>=2){ // chest emblem + mask
+    ctx.fillStyle="#ffc93c";ctx.strokeStyle="#9d0208";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(-4,4,7,0,Math.PI*2);ctx.fill();ctx.stroke();
+    ctx.fillStyle="#9d0208";ctx.font="bold 9px 'Lilita One',sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("G",-4,4.5);ctx.textBaseline="alphabetic";
+    ctx.fillStyle="#1d3557";ctx.beginPath();ctx.ellipse(13,-4.5,11,7.5,-.1,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(3,-6);ctx.lineTo(-4,-10+Math.sin(t*13)*2);ctx.lineTo(-3,-3);ctx.closePath();ctx.fill();
+  }
   // eye
   ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(13,-4,6.5,0,Math.PI*2);ctx.fill();
   ctx.fillStyle="#13202b";ctx.beginPath();ctx.arc(14.6,-3.6,3.8,0,Math.PI*2);ctx.fill();
@@ -835,7 +863,7 @@ function render(){
       case "shark":drawShark(e,t);break;case "blue":drawBlue(e.x,e.y,.85,t,e.ph);break;case "chest":drawChest(e,t);break;case "power":drawPower(e,t);break;case "finish":drawFinish(e,t);break;case "mate":drawMate(e,t);break}}
   const fx=G.cam+fishOff();
   G.team.forEach((m,i)=>{const ty=G.trail[Math.min(G.trail.length-1,(i+1)*7)]??G.fish.y;drawFish(fx-34-i*27,ty+Math.sin(m.b*3)*3,0,t+m.b,false,.55,true)});
-  drawFish(fx,G.fish.y,G.fish.tilt,t,G.fish.inv>0);
+  drawFish(fx,G.fish.y,G.fish.tilt,t,G.fish.inv>0,1,false,stageOf(G.runStars));
   if(G.mentor>0){const my=Math.max(SURF+50,G.fish.y-60)+Math.sin(t*2)*5,mx=fx+52;ctx.save();if(G.mentor<2)ctx.globalAlpha=G.mentor/2;drawMentor(mx,my,t);drawTip(mx-6,my-20,TIPS[G.tipI%TIPS.length]);ctx.restore()}
   for(const p of G.parts){const a=clamp(p.life/p.max,0,1);
     if(p.txt){ctx.globalAlpha=a;ctx.fillStyle=p.col;ctx.font="18px 'Lilita One',sans-serif";ctx.textAlign="center";ctx.strokeStyle="rgba(0,0,0,.45)";ctx.lineWidth=3;ctx.strokeText(p.txt,p.x,p.y);ctx.fillText(p.txt,p.x,p.y)}
@@ -845,6 +873,7 @@ function render(){
   if(theme==="deep"){const fxs=fishOff(),g=ctx.createRadialGradient(fxs,G.fish.y,70,fxs+60,G.fish.y,Math.max(360,VW*.45));
     g.addColorStop(0,"rgba(2,8,20,0)");g.addColorStop(1,"rgba(2,8,20,.82)");ctx.fillStyle=g;ctx.fillRect(-20,SURF,VW+40,FLOOR-SURF+40)}
   drawSurface(th,t);
+  if(G.evoFlash>0){ctx.fillStyle="rgba(255,240,190,"+(G.evoFlash/.6*.55)+")";ctx.fillRect(-20,-OY/S,VW+40,WH+2*OY/S)}
   // shark warnings
   if(G.state==="play")for(const e of G.ents){if(e.k==="shark"&&!e.dead){const dx=e.x-G.cam;if(dx>VW+10&&dx<VW+650){const a=.6+.4*Math.sin(t*14);
     ctx.fillStyle="rgba(255,80,60,"+a+")";ctx.beginPath();ctx.arc(VW-22,e.y,15,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff";ctx.font="20px 'Lilita One',sans-serif";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("!",VW-22,e.y+1);ctx.textBaseline="alphabetic"}}}
@@ -885,7 +914,7 @@ $("btnPause").onclick=pause;$("btnResume").onclick=resume;$("btnQuit").onclick=t
 $("btnSound").onclick=()=>{muted=!muted;store.set("muted",muted);updHud(true)};
 $("btnNext").onclick=()=>startLevel(G.li+1);
 $("btnMenu2").onclick=toMenu;$("btnMenu3").onclick=toMenu;
-$("btnRetry").onclick=()=>{G.score=G.startScore;G.lives=3;G.team=[];startLevel(G.li)};
+$("btnRetry").onclick=()=>{G.score=G.startScore;G.runStars=G.startRunStars;G.lives=3;G.team=[];startLevel(G.li)};
 $("btnMyStar").onclick=()=>{const nm=($("myName").value||"").trim().slice(0,26)||"Ukjent gründer";
   myStar={name:nm,year:new Date().getFullYear(),levels:maxDone,coins:lifeCoins};store.set("myStar",myStar);sfx.star();openColl("ovDone")};
 let collBack="ovMenu";
