@@ -356,6 +356,10 @@ function resize(){
   S=Math.min(ch/WH,cw/420);VW=cw/S;OY=Math.max(0,(ch-WH*S)/2);
 }
 addEventListener("resize",resize);resize();
+// iOS often reports the old size right after rotating, so re-measure a few times and also check every frame
+addEventListener("orientationchange",()=>[60,250,600,1200].forEach(ms=>setTimeout(resize,ms)));
+if(window.visualViewport)visualViewport.addEventListener("resize",resize);
+if(window.ResizeObserver)new ResizeObserver(resize).observe(cv);
 const setView=()=>ctx.setTransform(dpr*S,0,0,dpr*S,0,dpr*OY);
 
 // ---------- Helpers ----------
@@ -979,7 +983,7 @@ function render(){
 
 // ---------- Loop ----------
 let last=performance.now();
-function frame(now){const dt=Math.min(1/30,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
+function frame(now){if(Math.abs(cv.clientWidth-cw)>1||Math.abs(cv.clientHeight-ch)>1)resize();const dt=Math.min(1/30,(now-last)/1000);last=now;update(dt);render();requestAnimationFrame(frame)}
 
 // ---------- Input ----------
 const stage=$("stage");
