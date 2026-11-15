@@ -6,7 +6,7 @@ import { assessFitness, effectiveMaxHR } from '../engine/composition'
 import { avg, PHYSIQUE_INFO } from '../engine/types'
 import { Card, FindingRow, Icon, Metric, nb, dateNb } from './kit'
 import { TodayCard, type StartSession } from './Week'
-import { CheckinCard, HealthCheck, WeightCard } from './Daily'
+import { CheckinCard, HealthCheck, SleepCard, WeightCard } from './Daily'
 import { sortedScans, useApp } from './state'
 import { FatScale } from './Body'
 
@@ -39,6 +39,7 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
       <CheckinCard />
       <TodayCard start={start} />
       <WeightCard compact />
+      <SleepCard />
 
       {!latest && (
         <Card className="callout" onClick={() => go('scan')}>

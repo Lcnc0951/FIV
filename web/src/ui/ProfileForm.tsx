@@ -137,6 +137,8 @@ export function ProfileForm({ value, onChange, section = 'all', presets, onPrese
                 </label>
               ))}
             </div>
+            <label className="field"><span>Gjennomsnittlig leggetid (Søvn i Helse)</span>
+              <input id="watch-bedtime" type="time" value={value.watch?.avgBedtime ?? ''} onChange={(e) => onChange({ ...value, watch: { ...value.watch, avgBedtime: e.target.value || undefined } })} /></label>
           </fieldset>
           <fieldset>
             <legend>Plager / skader</legend>

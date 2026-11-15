@@ -134,6 +134,7 @@ export interface WatchData {
   activeKcal?: number   // snitt aktiv energi per dag
   steps?: number        // snitt skritt per dag
   exerciseMin?: number  // snitt treningsminutter per dag
+  avgBedtime?: string   // «Gjennomsnittlig leggetid» fra Søvn i Helse, f.eks. 23:46
   updated?: string
 }
 

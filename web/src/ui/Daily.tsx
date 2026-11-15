@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { cycleInfo, kcalSuggestion, PARQ, readiness, todayKey, WARNING_SIGNS, weightTrend, type Checkin, type Readiness } from '../engine/daily'
+import { bedtimeFor, cycleInfo, kcalSuggestion, PARQ, sleepAvailable, readiness, todayKey, WARNING_SIGNS, weightTrend, type Checkin, type Readiness } from '../engine/daily'
 import { Card, Icon, LineChart, nb, Tag } from './kit'
 import { useApp } from './state'
 
@@ -45,12 +45,16 @@ export function CheckinCard() {
     <Card>
       <h3>Hvordan er formen i dag?</h3>
       <p className="muted small">10 sekunder. PT-en justerer dagens økt etter svarene.</p>
-      <Scale label="Søvn" low="dårlig" high="topp" value={c.sleep} onChange={(v) => setC({ ...c, sleep: v })} />
+      {c.sleepScore == null && <Scale label="Søvn" low="dårlig" high="topp" value={c.sleep} onChange={(v) => setC({ ...c, sleep: v })} />}
+      <label className="field row-field"><span>Søvnscore fra klokka (valgfritt)</span>
+        <input id="ck-sleep" type="number" inputMode="numeric" min={0} max={100} placeholder="0–100" value={c.sleepScore ?? ''}
+          onChange={(e) => setC({ ...c, sleepScore: e.target.value === '' ? undefined : Math.min(100, Math.max(0, +e.target.value)) })} /></label>
       <Scale label="Stølhet" low="veldig støl" high="ikke støl" value={c.soreness} onChange={(v) => setC({ ...c, soreness: v })} />
       <Scale label="Energi" low="tom" high="full" value={c.energy} onChange={(v) => setC({ ...c, energy: v })} />
       <label className="field row-field"><span>Hvilepuls i dag (valgfritt)</span>
         <input id="ck-hr" type="number" inputMode="numeric" placeholder={profile.watch?.restingHR ? String(profile.watch.restingHR) : '–'} value={c.restingHR ?? ''}
           onChange={(e) => setC({ ...c, restingHR: e.target.value === '' ? undefined : +e.target.value })} /></label>
+      <label className="check"><input type="checkbox" checked={!!c.vitalsOutlier} onChange={(e) => setC({ ...c, vitalsOutlier: e.target.checked })} />«Vitale tegn» i Helse viser avvik i natt</label>
       <button className="btn primary full" onClick={async () => { await saveCheckin({ ...c, date: todayKey() }); setEdit(false) }}>Lagre dagsform</button>
     </Card>
   )
@@ -144,6 +148,23 @@ export function HealthCheck() {
         ))}
       </div>
       <button className="btn primary full" disabled={!done} onClick={() => saveProfile({ ...profile, health: { answers: answers as boolean[], answeredAt: new Date().toISOString() } }, false)}>Lagre</button>
+    </Card>
+  )
+}
+
+/** Søvn før treningsmorgenene — viser hvor mye du faktisk får med vanlig leggetid. */
+export function SleepCard() {
+  const { profile } = useApp()
+  const { bed, wake } = bedtimeFor(profile.trainingStart, 7)
+  const usual = profile.watch?.avgBedtime
+  const hours = usual ? sleepAvailable(profile.trainingStart, usual) : undefined
+  return (
+    <Card>
+      <div className="row between"><h3>Søvn før trening</h3>{hours != null && <Tag tone={hours >= 7 ? 'good' : hours >= 6.5 ? 'warn' : 'bad'}>{nb(hours)} t</Tag>}</div>
+      <p className="small">Trening {profile.trainingStart} → stå opp {wake} → <strong>legg deg senest {bed}</strong> for 7 timers søvn søndag–torsdag.</p>
+      {hours != null && hours < 7 && <p className="small">Med vanlig leggetid {usual} får du bare ca. {nb(hours)} timer før en treningsmorgen. Mer søvn gir mer igjen for treningen: bedre restitusjon, mindre muskeltap og mindre sug (Nedeltcheva 2010; Lamon 2021).</p>}
+      {!usual && <p className="muted small">Legg inn «Gjennomsnittlig leggetid» fra Søvn i Helse-appen under Profil, så regner PT-en ut hvor mye søvn du faktisk får.</p>}
+      <p className="muted small">Tips: skjermfri siste halvtime, kjølig soverom og samme leggetid hver kveld — også i helgene, innenfor en time.</p>
     </Card>
   )
 }

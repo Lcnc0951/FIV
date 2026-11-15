@@ -48,3 +48,19 @@ describe('periode og klokkedata', () => {
     expect(w).toMatchObject({ vo2max: 39.2, restingHR: 52, steps: 8764, activeKcal: 657, maxHR: 175 })
   })
 })
+
+import { bedtimeFor, sleepAvailable, sleepFromScore } from './daily'
+describe('søvn', () => {
+  it('leggetid før 06:10-trening', () => {
+    expect(bedtimeFor('06:10', 7)).toEqual({ wake: '05:45', bed: '22:30' })
+    expect(sleepAvailable('06:10', '23:46')).toBeCloseTo(5.7, 1)
+  })
+  it('Apples søvnscore og vitale tegn i dagsformen', () => {
+    expect(sleepFromScore(71)).toBe(3)
+    expect(readiness({ date: 'x', sleep: 5, soreness: 4, energy: 4, sleepScore: 45 }).reasons).toContain('søvnscore 45')
+    expect(readiness({ date: 'x', sleep: 4, soreness: 4, energy: 4, vitalsOutlier: true }).level).toBe('yellow')
+  })
+  it('leser leggetid fra Snarvei-tekst', () => {
+    expect(parseWatchText('Hvilepuls: 53\nLeggetid: 23:46')).toMatchObject({ restingHR: 53, avgBedtime: '23:46' })
+  })
+})

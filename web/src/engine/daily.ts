@@ -6,20 +6,31 @@ export const todayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMo
 
 // ---------------- Dagsform ----------------
 
-export interface Checkin { date: string; sleep: number; soreness: number; energy: number; restingHR?: number }
+export interface Checkin {
+  date: string; sleep: number; soreness: number; energy: number; restingHR?: number
+  /** Søvnscore fra Apple Watch (0–100). Overstyrer egen vurdering av søvn. */
+  sleepScore?: number
+  /** «Vitale tegn» i Helse-appen viste avvik i natt. */
+  vitalsOutlier?: boolean
+}
+
+/** Apples søvnscore til skala 1–5 (Svært høy/Høy/OK/Lav/Svært lav). */
+export const sleepFromScore = (s: number) => (s >= 90 ? 5 : s >= 81 ? 4 : s >= 61 ? 3 : s >= 41 ? 2 : 1)
 export type Readiness = 'green' | 'yellow' | 'red'
 
 /** 1–5 der 5 er best (stølhet: 5 = ikke støl). Hvilepuls 5+ over normalen trekker ned (Plews 2013). */
 export function readiness(c: Checkin, normalRestingHR?: number): { level: Readiness; score: number; reasons: string[] } {
-  let score = (c.sleep + c.soreness + c.energy) / 3
+  const sleep = c.sleepScore != null ? sleepFromScore(c.sleepScore) : c.sleep
+  let score = (sleep + c.soreness + c.energy) / 3
   const reasons: string[] = []
-  if (c.sleep <= 2) reasons.push('lite søvn')
+  if (sleep <= 2) reasons.push(c.sleepScore != null ? `søvnscore ${c.sleepScore}` : 'lite søvn')
   if (c.soreness <= 2) reasons.push('støl')
   if (c.energy <= 2) reasons.push('lite energi')
   if (c.restingHR && normalRestingHR && c.restingHR - normalRestingHR >= 5) {
     score -= c.restingHR - normalRestingHR >= 8 ? 1.2 : 0.6
     reasons.push(`hvilepuls ${c.restingHR - normalRestingHR} over normalen`)
   }
+  if (c.vitalsOutlier) { score -= 0.7; reasons.push('avvik i vitale tegn') }
   const level: Readiness = score >= 3.5 ? 'green' : score >= 2.5 ? 'yellow' : 'red'
   return { level, score: Math.round(score * 10) / 10, reasons }
 }
@@ -162,6 +173,7 @@ const KEYS: [keyof WatchData, RegExp][] = [
   ['steps', /skritt|steps/i],
   ['exerciseMin', /trening|exercise|minutt/i],
 ]
+const BEDTIME = /leggetid|bedtime/i
 
 /** Leser tekst limt inn fra en Snarvei, f.eks. «Kondisjon: 39,2\nHvilepuls: 52\nSkritt: 8764», eller JSON. */
 export function parseWatchText(text: string): WatchData {
@@ -172,6 +184,8 @@ export function parseWatchText(text: string): WatchData {
     if (Object.keys(out).length) return { ...out, updated: new Date().toISOString() }
   } catch { /* ikke JSON — les linjer */ }
   for (const line of text.split(/\n|;/)) {
+    const bt = line.match(/(\d{1,2})[:.](\d{2})/)
+    if (BEDTIME.test(line) && bt) { out.avgBedtime = `${bt[1].padStart(2, '0')}:${bt[2]}`; continue }
     const m = line.match(/^(.*?)[:=\s]+(-?\d[\d\s]*(?:[.,]\d+)?)/)
     if (!m) continue
     const value = Number(m[2].replace(/\s/g, '').replace(',', '.'))
@@ -179,4 +193,23 @@ export function parseWatchText(text: string): WatchData {
     if (key && Number.isFinite(value) && out[key] == null) (out as Record<string, number>)[key] = value
   }
   return Object.keys(out).length ? { ...out, updated: new Date().toISOString() } : out
+}
+
+// ---------------- Søvn ----------------
+
+const toMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
+const toTime = (m: number) => { const x = ((m % 1440) + 1440) % 1440; return `${String(Math.floor(x / 60)).padStart(2, '0')}:${String(x % 60).padStart(2, '0')}` }
+
+/** Når du må legge deg for å få `hours` søvn før økta (25 min fra vekking til start, 15 min å sovne). */
+export function bedtimeFor(trainingStart: string, hours = 7): { wake: string; bed: string } {
+  const wake = toMin(trainingStart) - 25
+  return { wake: toTime(wake), bed: toTime(wake - hours * 60 - 15) }
+}
+
+/** Søvn du faktisk får med vanlig leggetid før en treningsmorgen. */
+export function sleepAvailable(trainingStart: string, usualBedtime: string): number {
+  const wake = toMin(trainingStart) - 25
+  let bed = toMin(usualBedtime)
+  if (bed > wake) bed -= 1440
+  return Math.round(((wake - bed - 15) / 60) * 10) / 10
 }
