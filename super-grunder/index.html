@@ -1,12 +1,12 @@
 <title>Gründerspillet</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800&family=Quicksand:wght@500;600;700&display=swap">
 <style>
 /* Layout: one full-screen canvas game; HUD band on top, overlay panels centered over the sea. Single deliberate deep-sea look. */
 :root{
   --ink:#08202b; --sea:#0f4a5e; --foam:#eafcff; --gold:#ffc93c; --gold-deep:#d98a12;
-  --coral:#ff6b5e; --kelp:#3fcf98; --panel:rgba(6,28,38,.86); --line:rgba(234,252,255,.18);
+  --coral:#ff6b5e; --kelp:#3fcf98; --panel:rgba(6,28,38,.86); --line:rgba(var(--fg-rgb),.18);
   --display:"Lilita One","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
   --body:"Nunito","Segoe UI",system-ui,sans-serif;
   color-scheme:dark;
@@ -26,10 +26,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   font-weight:800;pointer-events:none;text-shadow:0 2px 0 rgba(0,0,0,.35)}
 #hud .grp{display:flex;align-items:center;gap:8px;font-variant-numeric:tabular-nums}
 #hearts{font-size:20px;letter-spacing:2px;color:var(--coral)}
-#hearts .off{color:rgba(234,252,255,.25)}
+#hearts .off{color:rgba(var(--fg-rgb),.25)}
 #lvlbox{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;align-items:center}
 #lvlname{font-family:var(--display);font-size:15px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-#prog{width:min(220px,100%);height:7px;border-radius:7px;background:rgba(234,252,255,.2);overflow:hidden}
+#prog{width:min(220px,100%);height:7px;border-radius:7px;background:rgba(var(--fg-rgb),.2);overflow:hidden}
 #prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--kelp),var(--gold))}
 .coinico{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,var(--gold) 45%,var(--gold-deep));box-shadow:inset 0 0 0 2px #b8700a}
 #score{font-family:var(--display);font-size:20px;min-width:4ch;text-align:right}
@@ -50,14 +50,14 @@ p{margin:0;line-height:1.45;max-width:42ch}
 .btn{border:0;border-radius:14px;padding:14px 26px;font-size:18px;font-weight:800;color:#3b2200;
   background:linear-gradient(#ffe07a,var(--gold));box-shadow:0 5px 0 var(--gold-deep);transition:transform .08s}
 .btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--gold-deep)}
-.btn.ghost{background:rgba(234,252,255,.1);color:var(--foam);box-shadow:0 4px 0 rgba(0,0,0,.35);border:2px solid var(--line)}
+.btn.ghost{background:rgba(var(--fg-rgb),.1);color:var(--foam);box-shadow:0 4px 0 rgba(0,0,0,.35);border:2px solid var(--line)}
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .levels{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-.lv{width:46px;height:46px;border-radius:12px;border:2px solid var(--line);background:rgba(234,252,255,.08);color:var(--foam);font-family:var(--display);font-size:20px}
+.lv{width:46px;height:46px;border-radius:12px;border:2px solid var(--line);background:rgba(var(--fg-rgb),.08);color:var(--foam);font-family:var(--display);font-size:20px}
 .lv[disabled]{opacity:.35;cursor:not-allowed}
 .lv.cur{border-color:var(--gold);color:var(--gold)}
-.how{font-size:14px;color:rgba(234,252,255,.8)}
-kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);border-radius:6px;padding:1px 6px}
+.how{font-size:14px;color:rgba(var(--fg-rgb),.8)}
+kbd{font-family:var(--body);font-weight:800;background:rgba(var(--fg-rgb),.14);border-radius:6px;padding:1px 6px}
 .stats{display:grid;grid-template-columns:1fr auto;gap:6px 18px;width:min(320px,100%);text-align:left;font-variant-numeric:tabular-nums}
 .stats b{text-align:right}
 .task{border:2px dashed var(--line);border-radius:14px;padding:10px 14px;width:100%;max-width:360px}
@@ -71,22 +71,59 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
 @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
 @media (orientation:portrait) and (pointer:coarse){.rot{display:flex}}
 .helpers{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;width:100%;font-size:12.5px;line-height:1.35;text-align:left}
-.helpers>div{display:flex;gap:8px;align-items:flex-start;background:rgba(234,252,255,.06);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
+.helpers>div{display:flex;gap:8px;align-items:flex-start;background:rgba(var(--fg-rgb),.06);border:1px solid var(--line);border-radius:12px;padding:8px 10px;min-width:0}
 .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:3px}
 .mystar{width:100%;max-width:400px;display:grid;gap:6px;font-size:13px;text-align:left}
-.mystar .bar{height:7px;border-radius:7px;background:rgba(234,252,255,.15);overflow:hidden}
+.mystar .bar{height:7px;border-radius:7px;background:rgba(var(--fg-rgb),.15);overflow:hidden}
 .mystar .bar i{display:block;height:100%;background:linear-gradient(90deg,#e7c675,var(--gold))}
 .jury{font-size:26px;letter-spacing:4px;color:var(--gold)}
-.jury small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(234,252,255,.7);display:block}
-.jury .off{color:rgba(234,252,255,.25)}
-#myName{width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:rgba(234,252,255,.08);color:var(--foam);font:inherit;font-size:18px;text-align:center}
+.jury small{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:rgba(var(--fg-rgb),.7);display:block}
+.jury .off{color:rgba(var(--fg-rgb),.25)}
+#myName{width:100%;max-width:320px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:rgba(var(--fg-rgb),.08);color:var(--foam);font:inherit;font-size:18px;text-align:center}
 .myplaque{display:grid;place-items:center;gap:4px}
 .myplaque svg{width:min(240px,64vw);height:auto}
 .myplaque:empty{display:none}
 @media (min-width:760px) and (max-height:560px){.panel{width:min(720px,100%)}}
 @media (max-height:560px){.panel{padding:14px 18px;gap:9px}.title{font-size:clamp(30px,8vh,46px)}h2{font-size:26px}p{font-size:14px}.btn{padding:10px 18px;font-size:16px}.helpers{font-size:12px}.coll{max-height:42vh}}
 .evo{font-weight:800;color:#ffd9a0;font-size:14px}
-.small{font-size:13px;color:rgba(234,252,255,.7)}
+.small{font-size:13px;color:rgba(var(--fg-rgb),.7)}
+
+/* Light brand panels, matching Gründeriet's fish-wall campaign */
+:root{--fg-rgb:234,252,255;--brand-orange:#ef6b2c;--brand-orange-deep:#c4501a;--brand-teal:#5b8a93;--wall:#f3f0e8;--brand:"Quicksand","Nunito",system-ui,sans-serif}
+.panel{--fg-rgb:34,52,60;--foam:#22343c;--line:rgba(34,52,60,.14);color:var(--foam);background:rgba(255,253,249,.95);border:0;box-shadow:0 18px 50px rgba(20,40,50,.22)}
+.panel .title{color:var(--brand-orange);text-shadow:0 3px 0 rgba(196,80,26,.18)}
+.panel .title small{color:var(--brand-teal);text-shadow:none}
+.panel h2{color:var(--brand-orange);text-shadow:none}
+.panel .eyebrow{color:var(--brand-teal)}
+.panel .quote{font-family:var(--brand);font-weight:700;color:var(--brand-orange)}
+.btn{color:#fff;background:linear-gradient(#ff8a45,var(--brand-orange));box-shadow:0 5px 0 var(--brand-orange-deep)}
+.btn:active{box-shadow:0 2px 0 var(--brand-orange-deep)}
+.btn.ghost{background:#fff;color:var(--foam);box-shadow:0 4px 0 rgba(34,52,60,.12);border:2px solid var(--line)}
+.panel .lv.cur{border-color:var(--brand-orange);color:var(--brand-orange)}
+.panel .evo{color:var(--brand-orange-deep)}
+.panel .task.ok{border-color:#2f9e6e;color:#2f8a60}
+.panel .jury{color:#f2a516}
+.panel .rot{background:rgba(239,107,44,.08);border-color:rgba(239,107,44,.3)}
+.panel .rot svg{color:var(--brand-orange)}
+.panel .mystar .bar i{background:linear-gradient(90deg,#ffb36b,var(--brand-orange))}
+button:focus-visible{outline-color:var(--brand-orange)}
+.wordmark{font-family:var(--brand);font-weight:500;font-size:19px;color:#4d5b61}
+.wordmark span{color:var(--brand-teal)}
+/* Front page: the fish wall is drawn on the canvas behind */
+#ovMenu{place-items:stretch}
+.menuwrap{display:grid;grid-template-rows:auto 1fr;gap:14px;width:100%;min-height:100%}
+.slogan{font-family:var(--brand);font-weight:700;color:#e8603c;font-size:clamp(17px,3.2vw,32px);line-height:1.2;text-align:center;margin:0 auto;max-width:30ch;text-wrap:balance;background:rgba(243,240,232,.94);padding:8px 18px;border-radius:16px;box-shadow:0 6px 20px rgba(40,60,90,.12)}
+@media (orientation:portrait){.menucard{gap:10px;padding:18px 16px}.menucard .title{font-size:clamp(34px,10vw,46px)}.menucard .row .btn.ghost{padding:10px 16px;font-size:15px}}
+.menucard{align-self:end;justify-self:center;width:min(460px,100%)}
+@media (orientation:landscape) and (min-width:640px){.menuwrap{grid-template-columns:1fr minmax(0,430px)}.slogan{grid-column:1/-1}.menucard{grid-column:2;align-self:center;justify-self:end}}
+.menucard .title{font-size:clamp(38px,8vw,56px)}
+.poster{font-family:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#f08a24;font-size:13px;line-height:1.35;max-width:34ch}
+details.more{width:100%}
+details.more summary{cursor:pointer;font-weight:800;color:var(--brand-teal);list-style:none;text-align:center;padding:6px;border-radius:10px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:" ▾"}
+details.more[open] summary::after{content:" ▴"}
+.morebody{display:flex;flex-direction:column;gap:12px;align-items:center;padding-top:8px}
 
 /* Star card toast */
 #toast{position:absolute;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translate(-50%,140%);
@@ -124,23 +161,31 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
   </div>
 
   <div class="ov" id="ovMenu">
-    <div class="panel">
-      <h1 class="title"><small>Gründerfisken Finn i</small>Gründerspillet</h1>
-      <p class="quote">«Å skape noe nytt krever mot. Våg å være annerledes!»</p>
-      <p>Svøm gjennom GründerLab-campen, fra idé og team til prototype, marked og pitch. Nivåene tar aldri slutt.</p>
-      <div class="row"><button class="btn" id="btnCont" hidden>Fortsett</button><button class="btn" id="btnStart">Start spill</button></div>
-      <div class="helpers">
+    <div class="menuwrap">
+      <p class="slogan">Å skape noe nytt krever mot – våg å være annerledes!</p>
+      <div class="panel menucard">
+        <p class="poster">Føler du deg som den oransje fisken som svømmer mot strømmen?</p>
+        <h1 class="title"><small>Gründerfisken Finn i</small>Gründerspillet</h1>
+        <p>Svøm gjennom GründerLab-campen, fra idé og team til prototype, marked og pitch. Nivåene tar aldri slutt.</p>
+        <div class="row"><button class="btn" id="btnCont" hidden>Fortsett</button><button class="btn" id="btnStart">Start spill</button></div>
+        <div class="row"><button class="btn ghost" id="btnColl">Gründerstien <span id="collCount">0/22</span></button><button class="btn ghost" id="btnFull" hidden>Fullskjerm</button></div>
+        <div class="rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg><span>Snu telefonen sidelengs for å se mer av havet.</span></div>
+        <details class="more"><summary>Slik spiller du · velg nivå · bli en stjerne</summary>
+          <div class="morebody">
+            <p class="how">Hold inne på skjermen, eller <kbd>mellomrom</kbd>, for å svømme opp. Slipp for å synke.</p>
+            <div class="helpers">
         <div><span class="dot" style="background:#ff8a1a"></span><span><b>Gründerteamet</b><br>Oransje fisker blir med deg og tar støyten når du treffer noe.</span></div>
         <div><span class="dot" style="background:#6aa3ad"></span><span><b>Mentorfisken</b><br>Gir deg tips og trekker til seg gullmynter.</span></div>
         <div><span class="dot" style="background:#4f7896"></span><span><b>Hvalen</b><br>Rydder veien, beskytter deg og spruter gull.</span></div>
       </div>
-      <div class="mystar" id="myProg"></div>
-      <div class="row"><button class="btn ghost" id="btnColl">Gründerstien <span id="collCount">0/22</span></button><button class="btn ghost" id="btnFull" hidden>Fullskjerm</button></div>
-      <div class="eyebrow">Velg nivå</div>
-      <div class="levels" id="levelBtns"></div>
-      <div class="rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18.5" r="1" fill="currentColor"/></svg><span>Snu telefonen sidelengs for å se mer av havet.</span></div>
-      <p class="how">Hold inne på skjermen, eller <kbd>mellomrom</kbd>, for å svømme opp. Slipp for å synke.</p>
-      <p class="small">Rekord: <b id="best">0</b> poeng · Levert av Gründeriet</p>
+            <div class="mystar" id="myProg"></div>
+            <div class="eyebrow">Velg nivå</div>
+            <div class="levels" id="levelBtns"></div>
+          </div>
+        </details>
+        <p class="small">Rekord: <b id="best">0</b> poeng</p>
+        <div class="wordmark">Levert av Gr<span>ü</span>nderiet</div>
+      </div>
     </div>
   </div>
 
@@ -848,7 +893,58 @@ function drawSurface(th,t){
   ctx.fillStyle="rgba(255,255,255,.55)";ctx.beginPath();ctx.moveTo(0,SURF-3);
   for(let x=0;x<=VW+20;x+=20)ctx.lineTo(x,SURF+Math.sin((x+G.cam)*.04+t*2)*3);ctx.lineTo(VW+20,SURF+6);ctx.lineTo(0,SURF+6);ctx.fill();
 }
+const WALL_BLUES=[["#8fc1ec","#3f7fcf"],["#6aa9e6","#2a5fae"],["#b7d7f3","#5d93d6"],["#4f8fd8","#1f4f96"],["#a9cdf0","#3b74c4"],["#7db4ea","#2f6db5"]];
+function drawArtFish(x,y,s,v,t){
+  const [c1,c2]=WALL_BLUES[v%WALL_BLUES.length],pat=Math.floor(hash(v*1.7)*4);
+  ctx.save();ctx.translate(x,y+Math.sin(t*1.4+v)*2);ctx.scale(s,s);
+  const w=Math.sin(t*5+v)*.15;ctx.save();ctx.translate(-18,0);ctx.rotate(w);ctx.fillStyle=c2;ctx.beginPath();ctx.moveTo(2,0);ctx.lineTo(-17,-14);ctx.quadraticCurveTo(-10,0,-17,14);ctx.closePath();ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.3)";ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(-13,-8);ctx.lineTo(-11,0);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.fillStyle=c2;ctx.beginPath();ctx.moveTo(-6,-11);ctx.quadraticCurveTo(2,-21,12,-12);ctx.fill();
+  const g=ctx.createLinearGradient(0,-15,0,15);g.addColorStop(0,c1);g.addColorStop(1,c2);ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(27,1);ctx.bezierCurveTo(23,-14,2,-16,-10,-11);ctx.quadraticCurveTo(-21,-5,-20,0);ctx.quadraticCurveTo(-21,5,-10,11);ctx.bezierCurveTo(2,16,23,14,27,1);ctx.fill();
+  if(pat===0){ctx.fillStyle="rgba(255,255,255,.85)";for(let k=0;k<7;k++){ctx.beginPath();ctx.arc(-12+hash(v+k)*26,-8+hash(v+k+9)*15,1.4+hash(v+k+3)*1.8,0,Math.PI*2);ctx.fill()}}
+  else if(pat===1){ctx.fillStyle="rgba(255,255,255,.32)";for(let k=0;k<4;k++){ctx.beginPath();ctx.ellipse(-10+k*8,-4+hash(v+k)*8,5,3.2,hash(v+k+2),0,Math.PI*2);ctx.fill()}}
+  else if(pat===2){ctx.fillStyle="rgba(240,248,255,.75)";ctx.beginPath();ctx.ellipse(2,5,15,5,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle=c2;ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(2,5,15,5,0,0,Math.PI*2);ctx.stroke()}
+  else{ctx.fillStyle="rgba(20,50,110,.28)";for(let k=0;k<5;k++){ctx.beginPath();ctx.ellipse(-12+hash(v+k)*24,-6+hash(v+k+5)*12,3.5,2.4,0,0,Math.PI*2);ctx.fill()}}
+  ctx.strokeStyle="rgba(255,255,255,.6)";ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(14,0,9,2.3,3.9);ctx.stroke();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(18,-3,3.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#14284a";ctx.beginPath();ctx.arc(18.8,-3,2.1,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawOrangeArt(x,y,s,t){
+  ctx.save();ctx.translate(x,y+Math.sin(t*2)*5);ctx.rotate(Math.sin(t*2)*.05);ctx.scale(s,s);
+  ctx.save();ctx.translate(-18,0);ctx.rotate(Math.sin(t*9)*.28);
+  let g=ctx.createLinearGradient(0,0,-26,0);g.addColorStop(0,"#ff9f1c");g.addColorStop(1,"#ffd23f");ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(4,0);ctx.bezierCurveTo(-8,-8,-16,-22,-26,-20);ctx.quadraticCurveTo(-18,0,-26,20);ctx.bezierCurveTo(-16,22,-8,8,4,0);ctx.fill();
+  ctx.strokeStyle="#f26b21";ctx.lineWidth=2;for(let k=-1;k<=1;k++){ctx.beginPath();ctx.moveTo(-4,k*2);ctx.quadraticCurveTo(-12,k*8,-21,k*13);ctx.stroke()}ctx.restore();
+  ctx.fillStyle="#ffc23a";ctx.beginPath();ctx.moveTo(-10,-11);ctx.bezierCurveTo(-6,-27,8,-26,13,-12);ctx.fill();
+  ctx.strokeStyle="#f26b21";ctx.lineWidth=1.5;for(let k=0;k<3;k++){ctx.beginPath();ctx.moveTo(-6+k*6,-12);ctx.lineTo(-4+k*5,-21);ctx.stroke()}
+  g=ctx.createLinearGradient(0,-16,0,16);g.addColorStop(0,"#ff9a3c");g.addColorStop(1,"#ea5a1f");ctx.fillStyle=g;
+  ctx.beginPath();ctx.moveTo(28,2);ctx.bezierCurveTo(24,-15,2,-17,-10,-12);ctx.quadraticCurveTo(-21,-5,-20,0);ctx.quadraticCurveTo(-21,6,-10,12);ctx.bezierCurveTo(2,17,24,15,28,2);ctx.fill();
+  [["#ffd23f",-8,-4,6,4],["#ffd23f",4,6,7,3.5],["#e63946",-2,-8,3.5,2.4],["#3a86ff",-12,4,2.6,2],["#fff3c4",8,-7,4,2.4],["#e63946",6,2,2.6,2],["#3a86ff",0,-1,2,1.6],["#ffd23f",14,4,3,2]]
+    .forEach(([c,a,b,rx,ry])=>{ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(a,b,rx,ry,.3,0,Math.PI*2);ctx.fill()});
+  ctx.fillStyle="#ffb703";ctx.beginPath();ctx.ellipse(4,9,7,3.5,.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(18,-3,5,0,Math.PI*2);ctx.fill();ctx.fillStyle="#1a1a2e";ctx.beginPath();ctx.arc(19,-3,2.8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(20,-4.3,1,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="#8a2e00";ctx.lineWidth=1.4;ctx.lineCap="round";ctx.beginPath();ctx.arc(23,3,3,.2,1.6);ctx.stroke();
+  ctx.restore();
+}
+function drawWall(t){
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle="#f3f0e8";ctx.fillRect(0,0,cw,ch);
+  const land=cw>ch&&cw>=640,cell=clamp(Math.min(cw,ch)/4.4,78,170),s=cell/84,rowH=cell*.62;
+  let ox=land?cw*.3:cw*.5,oy=land?ch*.55:ch*.24;const drift=t*16;
+  try{const sr=cv.getBoundingClientRect(),sl=document.querySelector(".slogan").getBoundingClientRect(),mc=document.querySelector(".menucard").getBoundingClientRect();
+    if(land&&mc.width){ox=(mc.left-sr.left)/2;oy=(sl.bottom-sr.top+ch)/2}
+    else if(mc.width){const top=sl.bottom-sr.top,bot=mc.top-sr.top;oy=bot-top>60?(top+bot)/2:Math.max(top+40,bot-20)}}catch(e){}
+  const c0=Math.floor(drift/cell)-1,c1=c0+Math.ceil(cw/cell)+3;
+  for(let r=0;r*rowH<ch+rowH;r++)for(let c=c0;c<=c1;c++){
+    const x=c*cell-drift+(r%2?cell/2:0),y=r*rowH+rowH*.6;
+    if((x-ox)**2+(y-oy)**2<(cell*.85)**2)continue;
+    drawArtFish(x,y,s,(r*53+c*7+1000)%997,t);
+  }
+  drawOrangeArt(ox,oy,s*1.25,t);
+}
 function render(){
+  if(G.state==="menu"){drawWall(G.t);return}
   const t=G.t,theme=LV(G.state==="menu"?0:G.li).theme,th=THEMES[theme];
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=th.sand2;ctx.fillRect(0,0,cw,ch);
   setView();
