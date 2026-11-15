@@ -102,7 +102,8 @@ kbd{font-family:var(--body);font-weight:800;background:rgba(234,252,255,.14);bor
   <div class="ov" id="ovMenu">
     <div class="panel">
       <h1 class="title"><small>Gründerfisken Finn i</small>Super Gründer</h1>
-      <p>Svøm gjennom havet, samle gullmynter og finn de skjulte gründerstjernene.</p>
+      <p class="quote">«Å skape noe nytt krever mot. Våg å være annerledes!»</p>
+      <p>Finn er den oransje fisken som svømmer sin egen vei. Samle gullmynter, unngå stimene og finn de skjulte gründerstjernene.</p>
       <div class="row"><button class="btn" id="btnStart">Start spill</button><button class="btn ghost" id="btnColl">Gründerstien <span id="collCount">0/22</span></button></div>
       <div class="eyebrow">Velg nivå</div>
       <div class="levels" id="levelBtns"></div>
@@ -205,15 +206,15 @@ const FOUNDERS=[
 const STARS=[4,4,4,5,5], STAR0=STARS.map((_,i)=>STARS.slice(0,i).reduce((a,b)=>a+b,0)), NF=FOUNDERS.length;
 const LEVELS=[
  {name:"Havna",sub:"Rolig start langs brygga. Pass på korallene og krabbene.",len:4200,speed:150,theme:"harbor",
-  segs:{wave:3,pillar:3,crab:2,chest:1},task:{type:"coins",n:40,text:"Samle minst 40 gullmynter"}},
+  segs:{wave:3,pillar:3,crab:2,school:1,chest:1},task:{type:"coins",n:40,text:"Samle minst 40 gullmynter"}},
  {name:"Tareskogen",sub:"Høy tare og svevende maneter. Ikke kom for nær!",len:4800,speed:165,theme:"kelp",
-  segs:{wave:2,pillar:3,jelly:3,crab:1,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}},
+  segs:{wave:2,pillar:3,jelly:3,crab:1,school:2,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}},
  {name:"Vraket",sub:"Et gammelt skipsvrak. Fiskekroker og kulefisk overalt.",len:5400,speed:180,theme:"wreck",
-  segs:{wave:2,pillar:2,jelly:2,puffer:3,hook:3,chest:1},task:{type:"nohit",text:"Kom i mål uten å bli truffet"}},
+  segs:{wave:2,pillar:2,jelly:2,puffer:3,hook:3,school:2,chest:1},task:{type:"nohit",text:"Kom i mål uten å bli truffet"}},
  {name:"Dyphavet",sub:"Mørkt og dypt. Følg lyset og se opp for haier.",len:6000,speed:195,theme:"deep",
-  segs:{wave:2,pillar:2,jelly:3,puffer:2,hook:2,shark:2,chest:1},task:{type:"coins",n:70,text:"Samle minst 70 gullmynter"}},
+  segs:{wave:2,pillar:2,jelly:3,puffer:2,hook:2,shark:2,school:2,chest:1},task:{type:"coins",n:70,text:"Samle minst 70 gullmynter"}},
  {name:"Gründerrevet",sub:"Siste etappe! Alt du har lært, på en gang.",len:6800,speed:210,theme:"reef",
-  segs:{wave:2,pillar:3,jelly:2,puffer:2,hook:2,shark:2,crab:1,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}}
+  segs:{wave:2,pillar:3,jelly:2,puffer:2,hook:2,shark:2,crab:1,school:3,chest:1},task:{type:"stars",text:"Finn alle gründerstjernene"}}
 ];
 const THEMES={
  harbor:{sky:["#bfefff","#7fd7f0"],top:"#4fc9da",bot:"#1a7f9d",sand:"#efd595",sand2:"#cfae6c",far:"rgba(20,70,90,.45)",mid:"#1f6d7d",pillar:["#ff8a6b","#e85a49"],ray:.12},
@@ -293,6 +294,8 @@ function buildLevel(li){
     puffer(x){const y=rr(130,420);ents.push({k:"puffer",x:x+200,y,by:y,ph:R()*6,r:16,vx:-40-d*8});const cy=y>270?y-120:y+120;for(let i=0;i<4;i++)coin(x+60+i*32,cy);return x+250},
     hook(x){ents.push({k:"hook",x:x+60,base:rr(150,260),amp:rr(50,90),ph:R()*6,y:200,spd:1.2+d*.15});for(let i=0;i<3;i++)coin(x+60,400+i*-30+((i%2)?0:0)+30);return x+220},
     shark(x){const y=rr(150,420);ents.push({k:"shark",x:x+320,y,vx:-170,act:false,r:18});const cy=y>270?y-130:y+130;for(let i=0;i<5;i++)coin(x+40+i*34,cy);return x+300},
+    school(x){const y=rr(150,330),n=3+(R()<.3+d*.1?1:0);for(let k=0;k<n;k++)ents.push({k:"blue",x:x+180+k*34,y:y+(k%2?-34:34)*(k>0?1:0)+(k>1?(k%2?-20:20):0),by:0,vx:-70-d*10,ph:R()*6,r:14});
+      const cy=y>260?y-140:y+140;for(let i=0;i<5;i++)coin(x+80+i*32,cy);return x+300},
     chest(x){ents.push({k:"chest",x:x+80,y:FLOOR-30,open:false});for(let i=0;i<3;i++)coin(x+50+i*30,FLOOR-90);return x+240}
   };
   let x=650;
@@ -441,6 +444,9 @@ function update(dt){
       case "hook":
         e.y=e.base+Math.sin(G.t*e.spd+e.ph)*e.amp;
         if((Math.abs(fx-e.x)<fr-2&&fy<e.y)||dist2(e.x+4,e.y+10,fx,fy)<(fr+9)**2)hurt();break;
+      case "blue":
+        if(e.x<G.cam+VW+60){e.x+=e.vx*dt}if(!e.by)e.by=e.y;e.y=e.by+Math.sin(G.t*2+e.ph)*8;
+        if(dist2(e.x,e.y,fx,fy)<(fr+e.r-3)**2)hurt();break;
       case "shark":
         if(!e.act&&e.x<G.cam+VW+520)e.act=true;
         if(e.act)e.x+=e.vx*dt;
@@ -461,35 +467,50 @@ function drawFish(x,y,tilt,t,blink){
   ctx.save();ctx.translate(x,y);ctx.rotate(tilt);
   if(blink&&Math.floor(t*14)%2){ctx.globalAlpha=.35}
   const wag=Math.sin(t*(G.holding?18:9))*.35;
-  // tail
-  ctx.save();ctx.translate(-20,0);ctx.rotate(wag);ctx.fillStyle="#ff7a1a";
-  ctx.beginPath();ctx.moveTo(2,0);ctx.quadraticCurveTo(-10,-4,-18,-15);ctx.quadraticCurveTo(-13,0,-18,15);ctx.quadraticCurveTo(-10,4,2,0);ctx.fill();ctx.restore();
+  // tail: big flowing goldfish tail with fin rays
+  ctx.save();ctx.translate(-20,0);ctx.rotate(wag);
+  let tg=ctx.createLinearGradient(0,0,-30,0);tg.addColorStop(0,"#ff7a12");tg.addColorStop(1,"#ffb347");ctx.fillStyle=tg;
+  ctx.beginPath();ctx.moveTo(4,-2);ctx.bezierCurveTo(-8,-10,-20,-26,-32,-20);ctx.quadraticCurveTo(-22,-8,-24,0);ctx.quadraticCurveTo(-22,8,-32,20);ctx.bezierCurveTo(-20,26,-8,10,4,2);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="rgba(200,70,0,.45)";ctx.lineWidth=1.2;for(let k=-2;k<=2;k++){ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-14,k*6,-26,k*8.5);ctx.stroke()}
+  ctx.restore();
   // dorsal fin
-  ctx.fillStyle="#ff8f2a";ctx.beginPath();ctx.moveTo(-8,-14);ctx.quadraticCurveTo(0,-27,10,-15);ctx.closePath();ctx.fill();
+  ctx.fillStyle="#ff8a1a";ctx.beginPath();ctx.moveTo(-14,-12);ctx.bezierCurveTo(-10,-30,6,-34,12,-15);ctx.closePath();ctx.fill();
+  ctx.strokeStyle="rgba(200,70,0,.4)";ctx.lineWidth=1;for(let k=0;k<4;k++){ctx.beginPath();ctx.moveTo(-10+k*6,-13);ctx.lineTo(-8+k*5,-26+k*2);ctx.stroke()}
   // body
-  const g=ctx.createLinearGradient(0,-18,0,18);g.addColorStop(0,"#ffcf4a");g.addColorStop(1,"#ff8a1f");
-  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,0,25,18,0,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="rgba(255,244,214,.75)";ctx.beginPath();ctx.ellipse(3,7,16,8,0,0,Math.PI*2);ctx.fill();
-  // stripe
-  ctx.strokeStyle="rgba(255,255,255,.85)";ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(-9,-16);ctx.quadraticCurveTo(-13,0,-9,16);ctx.stroke();
-  // side fin
-  ctx.fillStyle="#ff9d33";ctx.save();ctx.translate(-2,4);ctx.rotate(Math.sin(t*10)*.4+.3);ctx.beginPath();ctx.ellipse(-5,0,7,4,0,0,Math.PI*2);ctx.fill();ctx.restore();
-  // tie
-  ctx.fillStyle="#18355e";ctx.beginPath();ctx.moveTo(12,11);ctx.lineTo(17,11);ctx.lineTo(15,14);ctx.closePath();ctx.fill();
-  ctx.beginPath();ctx.moveTo(14.5,13.5);ctx.lineTo(17.5,22);ctx.lineTo(14.5,25);ctx.lineTo(11.5,22);ctx.closePath();ctx.fill();
-  ctx.fillStyle="#ffc93c";ctx.fillRect(12.5,18,4,1.6);
+  const g=ctx.createRadialGradient(4,-6,3,0,0,28);g.addColorStop(0,"#ffb23a");g.addColorStop(.6,"#ff7d14");g.addColorStop(1,"#e9560a");
+  ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(26,2);ctx.bezierCurveTo(24,-16,6,-19,-6,-16);ctx.bezierCurveTo(-18,-12,-22,-4,-22,0);ctx.bezierCurveTo(-22,6,-16,14,-4,16);ctx.bezierCurveTo(10,18,24,14,26,2);ctx.fill();
+  // scales hint + belly glow
+  ctx.strokeStyle="rgba(255,220,150,.45)";ctx.lineWidth=1.2;
+  for(let r=0;r<2;r++)for(let c=0;c<3;c++){ctx.beginPath();ctx.arc(-10+c*8+r*4,-4+r*8,4,-1.2,1.2);ctx.stroke()}
+  ctx.fillStyle="rgba(255,230,170,.45)";ctx.beginPath();ctx.ellipse(6,9,13,5,0,0,Math.PI*2);ctx.fill();
+  // fins
+  ctx.fillStyle="#ff9b2e";ctx.save();ctx.translate(2,6);ctx.rotate(Math.sin(t*10)*.4+.5);ctx.beginPath();ctx.ellipse(-6,0,9,4.5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+  ctx.fillStyle="#f06a10";ctx.beginPath();ctx.moveTo(-4,15);ctx.quadraticCurveTo(-8,24,0,22);ctx.quadraticCurveTo(2,18,4,16);ctx.fill();
   // eye
-  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(12,-5,7,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#13202b";ctx.beginPath();ctx.arc(14,-4.5,3.6,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(15.2,-6,1.3,0,Math.PI*2);ctx.fill();
-  // smile
-  ctx.strokeStyle="#7a3300";ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(19,3,4,.2,1.6);ctx.stroke();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(13,-4,6.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#13202b";ctx.beginPath();ctx.arc(14.6,-3.6,3.8,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(15.8,-5.2,1.4,0,Math.PI*2);ctx.fill();
+  // cheek + smile
+  ctx.fillStyle="rgba(255,120,90,.5)";ctx.beginPath();ctx.ellipse(16,5,3.5,2.2,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle="#8a2e00";ctx.lineWidth=1.8;ctx.lineCap="round";ctx.beginPath();ctx.arc(20,2,4.5,.3,1.5);ctx.stroke();
   ctx.restore();
   if(G.fish.shield){ctx.save();ctx.strokeStyle="rgba(190,245,255,.9)";ctx.lineWidth=2.5;ctx.fillStyle="rgba(160,230,255,.18)";
     ctx.beginPath();ctx.arc(x,y,32+Math.sin(t*5)*1.5,0,Math.PI*2);ctx.fill();ctx.stroke();
     ctx.strokeStyle="rgba(255,255,255,.8)";ctx.beginPath();ctx.arc(x,y,24,-2.4,-1.7);ctx.stroke();ctx.restore()}
   if(G.fish.magnet>0){ctx.save();ctx.strokeStyle="rgba(255,160,160,"+(.25+.2*Math.sin(t*8))+")";ctx.lineWidth=2;ctx.setLineDash([6,8]);
     ctx.beginPath();ctx.arc(x,y,60+((t*60)%40),0,Math.PI*2);ctx.stroke();ctx.restore()}
+}
+function drawBlue(x,y,sc,t,ph){
+  ctx.save();ctx.translate(x,y);ctx.scale(sc,sc);ctx.rotate(Math.sin(t*3+ph)*.06);
+  const w=Math.sin(t*9+ph)*.3;
+  ctx.save();ctx.translate(18,0);ctx.rotate(w);ctx.fillStyle="#2a7fcf";ctx.beginPath();ctx.moveTo(-2,0);ctx.lineTo(16,-13);ctx.quadraticCurveTo(11,0,16,13);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.fillStyle="#3d8fd8";ctx.beginPath();ctx.moveTo(-4,-12);ctx.quadraticCurveTo(4,-22,12,-11);ctx.fill();
+  const g=ctx.createLinearGradient(0,-14,0,14);g.addColorStop(0,"#6cc0f2");g.addColorStop(1,"#1f6cc0");ctx.fillStyle=g;
+  ctx.beginPath();ctx.ellipse(0,0,22,13,0,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle="rgba(220,240,255,.55)";[[-2,-4,2.6],[6,3,2],[-9,4,2.2],[3,-8,1.6],[10,-3,1.4]].forEach(([a,b,r])=>{ctx.beginPath();ctx.arc(a,b,r,0,Math.PI*2);ctx.fill()});
+  ctx.strokeStyle="rgba(230,245,255,.7)";ctx.lineWidth=1.6;ctx.beginPath();ctx.ellipse(-2,5,6,3,0,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(-13,-3,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#0d1b2a";ctx.beginPath();ctx.arc(-14,-3,2.2,0,Math.PI*2);ctx.fill();
+  ctx.restore();
 }
 function drawCoin(e,t){
   const s=Math.abs(Math.cos(t*3+e.x*.02));ctx.save();ctx.translate(e.x,e.y);
@@ -636,6 +657,10 @@ function drawBackground(th,theme,t){
       ctx.fillStyle="#ff9eb8";ctx.beginPath();ctx.arc(x+150,FLOOR-8,16,Math.PI,0);ctx.fill()})}
   if(theme==="harbor"){tiles(.6,230,(x,i)=>{ctx.fillStyle="#2c6f6d";ctx.beginPath();ctx.ellipse(x+40,FLOOR,36,18+hash(i)*14,0,Math.PI,0);ctx.fill();
       ctx.strokeStyle="#3aa36f";ctx.lineWidth=5;ctx.lineCap="round";for(let k=0;k<3;k++){ctx.beginPath();ctx.moveTo(x+120+k*10,FLOOR);ctx.quadraticCurveTo(x+120+k*10+Math.sin(t*2+k)*10,FLOOR-30,x+122+k*10,FLOOR-60-k*8);ctx.stroke()}})}
+  // schools of blue fish swimming the other way
+  {const p=.45,T=560,off=G.cam*p+t*38,i0=Math.floor(off/T)-1,i1=Math.ceil((off+VW)/T)+1;ctx.save();ctx.globalAlpha=theme==="deep"?.22:.38;
+    for(let i=i0;i<=i1;i++){if(hash(i*3.3)<.35)continue;const bx=i*T-off,by=SURF+50+hash(i+7)*(FLOOR-SURF-150),n=3+Math.floor(hash(i+2)*4);
+      for(let k=0;k<n;k++)drawBlue(bx+(k%3)*46+hash(i+k)*20,by+Math.floor(k/3)*34+(k%2)*14,.55,t,i+k)}ctx.restore()}
   // sand floor
   g=ctx.createLinearGradient(0,FLOOR,0,bottom);g.addColorStop(0,th.sand);g.addColorStop(1,th.sand2);ctx.fillStyle=g;
   ctx.beginPath();ctx.moveTo(0,bottom);tiles(1,40,(x,i)=>{ctx.lineTo(x,FLOOR+Math.sin(i*1.3)*3)});ctx.lineTo(VW+80,bottom);ctx.closePath();ctx.fill();
@@ -657,7 +682,7 @@ function render(){
   for(const e of G.ents){if(e.dead||e.x<G.cam-120||e.x>G.cam+VW+120)continue;
     switch(e.k){case "coin":drawCoin(e,t);break;case "star":drawStar(e,t);break;case "pillar":if(e.x+e.w>G.cam-10)drawPillar(e,th,t);break;
       case "jelly":drawJelly(e,t);break;case "crab":drawCrab(e,t);break;case "puffer":drawPuffer(e,t);break;case "hook":drawHook(e);break;
-      case "shark":drawShark(e,t);break;case "chest":drawChest(e,t);break;case "power":drawPower(e,t);break;case "finish":drawFinish(e,t);break}}
+      case "shark":drawShark(e,t);break;case "blue":drawBlue(e.x,e.y,.85,t,e.ph);break;case "chest":drawChest(e,t);break;case "power":drawPower(e,t);break;case "finish":drawFinish(e,t);break}}
   const fx=G.cam+fishOff();
   drawFish(fx,G.fish.y,G.fish.tilt,t,G.fish.inv>0);
   for(const p of G.parts){const a=clamp(p.life/p.max,0,1);
