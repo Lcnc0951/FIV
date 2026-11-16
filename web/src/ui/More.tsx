@@ -51,7 +51,7 @@ export function ProfileView({ onBack }: { onBack: () => void }) {
   const [loc, setLoc] = useState<string | null>(null)
   const [copied, setCopied] = useState('')
   const dirty = JSON.stringify(draft) !== JSON.stringify(profile)
-  const PROGRAM_KEYS: (keyof Profile)[] = ['sex', 'birthYear', 'heightCm', 'goal', 'experience', 'daysPerWeek', 'sessionMinutes', 'limitations', 'physique', 'postureGoals', 'locations']
+  const PROGRAM_KEYS: (keyof Profile)[] = ['sex', 'birthYear', 'heightCm', 'goal', 'experience', 'daysPerWeek', 'sessionMinutes', 'limitations', 'physique', 'postureGoals', 'locations', 'preferFreeWeights']
   const programChanged = PROGRAM_KEYS.some((k) => JSON.stringify(draft[k]) !== JSON.stringify(profile[k]))
   const [paste, setPaste] = useState('')
   const [pasteMsg, setPasteMsg] = useState('')

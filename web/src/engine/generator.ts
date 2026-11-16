@@ -85,7 +85,7 @@ function pick(pattern: MovementPattern, prefer: Muscle | undefined, p: ProfileDa
   let uni = target ? a.unilateralFocus[target] != null : false
   if (pattern === 'carry' || (pattern === 'core' && (a.postureFlags.has('shoulderTilt') || a.postureFlags.has('hipTilt')))) uni = true
   if (lightLoadsOnly(p) && ['squat', 'hinge', 'singleLeg', 'horizontalPush'].includes(pattern)) uni = true
-  return select({ pattern, available: new Set(p.location.equipment), limitations: p.limitations, preferPrimary: prefer, preferUnilateral: uni, occurrence, exclude })
+  return select({ pattern, available: new Set(p.location.equipment), limitations: p.limitations, preferPrimary: prefer, preferUnilateral: uni, occurrence, exclude, preferFreeWeights: p.preferFreeWeights })
 }
 const exerciseForPattern = (p: MovementPattern) => allExercises.find((e) => e.pattern === p)
 

@@ -12,7 +12,7 @@ export function profileData(p: Profile, loc?: TrainingLocation): ProfileData {
   return {
     sex: p.sex, age: new Date().getFullYear() - p.birthYear, heightCm: p.heightCm, weightKg: p.weightKg, goal: p.goal,
     experience: p.experience, daysPerWeek: p.daysPerWeek, sessionMinutes: p.sessionMinutes, location, limitations: p.limitations,
-    targetBodyFat: p.targetBodyFat || undefined, physique: p.physique, postureGoals: p.postureGoals, watch: p.watch, kcalOffset: p.kcalOffset,
+    targetBodyFat: p.targetBodyFat || undefined, physique: p.physique, postureGoals: p.postureGoals, watch: p.watch, kcalOffset: p.kcalOffset, preferFreeWeights: p.preferFreeWeights,
   }
 }
 export const activeLocation = (p: Profile) => p.locations.find((l) => l.id === p.activeLocationId) ?? p.locations[0]

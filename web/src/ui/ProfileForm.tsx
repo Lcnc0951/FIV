@@ -97,6 +97,8 @@ export function ProfileForm({ value, onChange, section = 'all', presets, onPrese
             <p className="hint">{value.sessionMinutes} minutter per økt. Programmet tilpasses tiden du har.</p>
             <Stepper label="Styrkeøkter per uke" value={value.daysPerWeek} min={1} max={6} onChange={(v) => set('daysPerWeek', v)} />
             <Stepper label="Løpeøkter per uke" value={value.runsPerWeek} min={0} max={4} onChange={(v) => set('runsPerWeek', v)} />
+            <label className="check"><input type="checkbox" checked={!!value.preferFreeWeights} onChange={(e) => set('preferFreeWeights', e.target.checked)} />
+              <span>Foretrekk manualer og strikk<br /><span className="muted small">Kabeløvelser byttes med manual- eller strikkvarianter. Maskiner som lårcurl beholdes.</span></span></label>
             <label className="check"><input type="checkbox" checked={value.weekendTraining} onChange={(e) => set('weekendTraining', e.target.checked)} />Jeg kan trene på lørdag også</label>
           </fieldset>
           {value.runsPerWeek > 0 && (

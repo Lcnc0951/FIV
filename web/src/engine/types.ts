@@ -123,6 +123,8 @@ export interface Profile {
   cycleStart?: string
   /** Kalorijustering fra vekttrenden (kcal per dag). */
   kcalOffset?: number
+  /** Velg manualer, kettlebell og strikk fremfor kabelmaskin. */
+  preferFreeWeights?: boolean
   /** Korreksjonsfaktorer for kameraskann, lært fra målebånd (f.eks. waist: 1.05). */
   calibration?: Partial<Record<'neck' | 'chest' | 'waist' | 'hip' | 'arm' | 'thigh', number>>
   /** Helsesjekk (PAR-Q+): svar per spørsmål. */
@@ -167,6 +169,7 @@ export interface ProfileData {
   postureGoals: PostureGoal[]
   watch?: WatchData
   kcalOffset?: number
+  preferFreeWeights?: boolean
 }
 
 /** Samme feltnavn som Swift `ScanMeasurements` (JSON fra iOS-appen kan importeres direkte). */

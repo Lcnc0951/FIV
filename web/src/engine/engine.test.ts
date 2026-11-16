@@ -104,3 +104,17 @@ describe('coach', () => {
     expect(n.proteinG).toBe(Math.round(82 * 2.2)); expect(n.targetKcal).toBeLessThan(n.maintenanceKcal)
   })
 })
+
+describe('manualer og strikk fremfor kabel', () => {
+  it('velger frie vekter når brukeren foretrekker det, men beholder lårcurl-maskin', () => {
+    const p = profile({ preferFreeWeights: true })
+    const prog = generateProgram(p, analyzeBody(p))
+    const ex = prog.days.flatMap((d) => d.exercises).map((x) => exercise(x.exerciseId)!)
+    expect(ex.filter((e) => e.requires.includes('cableMachine'))).toHaveLength(0)
+    expect(ex.some((e) => e.requires.includes('dumbbells') || e.anyOf.includes('dumbbells'))).toBe(true)
+    expect(ex.some((e) => e.id === 'seated_leg_curl')).toBe(true)
+    // Uten preferansen brukes kabel som før
+    const normal = generateProgram(profile(), analyzeBody(profile())).days.flatMap((d) => d.exercises).map((x) => exercise(x.exerciseId)!)
+    expect(normal.some((e) => e.requires.includes('cableMachine'))).toBe(true)
+  })
+})

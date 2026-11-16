@@ -125,7 +125,7 @@ export function ExerciseSheet({ p, onClose, allowSwap = true }: { p: Prescriptio
   const e = p ? exercise(p.exerciseId) : undefined
   return (
     <Sheet open={!!e} onClose={onClose} title={e?.name ?? ''}>
-      {e && p && <ExerciseDetail e={e} p={p} alts={allowSwap ? alternatives(e, activeLocation(profile), profile.limitations).slice(0, 6) : []}
+      {e && p && <ExerciseDetail e={e} p={p} alts={allowSwap ? alternatives(e, activeLocation(profile), profile.limitations, profile.preferFreeWeights).slice(0, 6) : []}
         onSwap={(alt) => { swap(p.id, alt.id); onClose() }} />}
     </Sheet>
   )
