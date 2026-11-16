@@ -16,12 +16,14 @@
   --body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius: 16px;
   --tabbar: 64px;
+  --ring-strength: #e0501c; --ring-run: #17a34a; --ring-recovery: #2a7fd4;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1112; --card: #181b1c; --card-2: #212526; --fg: #eceeed; --muted: #9aa29d; --line: #2c3132;
     --accent: #ff6a35; --accent-soft: #3a2117; --good: #45c27a; --warn: #e2a64a; --bad: #ff6f63; --info: #6aa7ef;
+    --ring-strength: #ff5a2a; --ring-run: #3ddc74; --ring-recovery: #4aa8ff;
     color-scheme: dark;
   }
 }
@@ -317,3 +319,30 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .bubble li { margin: 2px 0; }
 .bubble-h { font-weight: 700; margin-top: 8px !important; }
 .bubble.pt { white-space: normal; }
+
+/* Ukeringer */
+.tiny { font-size: 0.72rem; }
+.rings-main { display: flex; align-items: center; gap: 16px; margin: 8px 0; }
+.rings { flex: none; }
+.ring-arc { transition: stroke-dasharray 0.8s cubic-bezier(.2,.8,.2,1); }
+.rings-legend { display: grid; gap: 8px; min-width: 0; }
+.ring-row { display: grid; line-height: 1.25; }
+.ring-label { font-family: var(--display); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.ring-value { font-size: 1.05rem; font-weight: 600; }
+.streak { font-size: 0.85rem; font-weight: 600; }
+.rings-done { margin: 4px 0 8px; font-weight: 700; color: var(--good); }
+.rings-card.closed { box-shadow: 0 0 0 2px var(--good) inset; }
+.day-dots { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 6px 0 10px; text-align: center; }
+.day-dot { display: grid; justify-items: center; gap: 3px; color: var(--muted); }
+.day-dot .dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); box-sizing: border-box; }
+.day-dot.strength .dot { border-color: var(--ring-strength); }
+.day-dot.run .dot { border-color: var(--ring-run); }
+.day-dot.strength.done .dot { background: var(--ring-strength); }
+.day-dot.run.done .dot { background: var(--ring-run); }
+.day-dot.rest.done .dot { background: var(--muted); }
+.day-dot.missed .dot { opacity: 0.45; border-style: dashed; }
+.day-dot.before .dot { opacity: 0.3; border-color: var(--line); }
+.ring-history { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+.ring-history button { display: grid; justify-items: center; gap: 2px; background: none; border: 1px solid transparent; border-radius: 12px; padding: 4px 6px; color: var(--muted); cursor: pointer; flex: 1; }
+.ring-history button.on { border-color: var(--line); background: var(--card-2); color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .ring-arc { transition: none; } }

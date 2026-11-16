@@ -218,3 +218,49 @@ export function estimateMinutes(groups: SupersetGroup[]): number {
 
 export function _internal() { return { CAT } }
 export type { BodyScan }
+
+// ---- Ukeringer (som aktivitetsringene på Apple Watch) ----
+export interface Ring { key: 'strength' | 'run' | 'recovery'; label: string; done: number; goal: number; expected: number; pct: number }
+export interface WeekRings {
+  rings: Ring[]; closed: boolean; complete: boolean
+  /** Per ukedag: planlagt type og om den er gjennomført. */
+  days: { weekday: number; kind: DayPlan['kind']; done: boolean; past: boolean; did?: 'strength' | 'run'; beforeStart: boolean }[]
+}
+
+/** Gode netter som trengs for å lukke restitusjonsringen. */
+export const RECOVERY_GOAL = 5
+
+export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; checkins: Checkin[]; weekStart: Date; now?: Date; since?: Date }): WeekRings {
+  const now = input.now ?? new Date()
+  const start = mondayOf(input.weekStart)
+  const end = new Date(start); end.setDate(end.getDate() + 7)
+  const complete = now >= end
+  const today = complete ? 7 : weekdayIndex(now)
+  const sinceDay = input.since ? new Date(input.since.getFullYear(), input.since.getMonth(), input.since.getDate()) : undefined
+  const dateOf = (wd: number) => { const x = new Date(start); x.setDate(x.getDate() + wd); return x }
+  const counts = (d: DayPlan) => !sinceDay || dateOf(d.weekday) >= sinceDay
+  const inWeek = (iso: string) => { const t = new Date(iso); return t >= start && t < end }
+
+  const wk = input.workouts.filter((w) => inWeek(w.date))
+  const strengthDays = new Set(wk.filter((w) => !w.run).map((w) => weekdayIndex(new Date(w.date))))
+  const runDays = new Set(wk.filter((w) => w.run).map((w) => weekdayIndex(new Date(w.date))))
+  const goodNights = input.checkins.filter((c) => inWeek(c.date + 'T12:00') && (c.sleepScore != null ? sleepFromScore(c.sleepScore) : c.sleep) >= 3).length
+  const firstDay = sinceDay && sinceDay > start ? weekdayIndex(sinceDay) : 0
+  const recoveryGoal = Math.max(1, Math.round(RECOVERY_GOAL * (7 - firstDay) / 7))
+
+  const plannedS = input.days.filter((d) => d.kind === 'strength' && counts(d))
+  const plannedR = input.days.filter((d) => d.kind === 'run' && counts(d))
+  const ring = (key: Ring['key'], label: string, done: number, goal: number, expected: number): Ring =>
+    ({ key, label, done, goal, expected, pct: goal ? Math.min(1, done / goal) : 1 })
+  const rings = [
+    ring('strength', 'Styrke', strengthDays.size, plannedS.length, plannedS.filter((d) => d.weekday < today).length),
+    ring('run', 'Kondisjon', runDays.size, plannedR.length, plannedR.filter((d) => d.weekday < today).length),
+    ring('recovery', 'Restitusjon', goodNights, recoveryGoal, Math.round(recoveryGoal * Math.max(0, today - firstDay) / Math.max(1, 7 - firstDay))),
+  ]
+  const days = input.days.map((d) => ({
+    weekday: d.weekday, kind: d.kind, past: d.weekday < today, beforeStart: !counts(d),
+    did: strengthDays.has(d.weekday) ? 'strength' as const : runDays.has(d.weekday) ? 'run' as const : undefined,
+    done: d.kind === 'strength' ? strengthDays.has(d.weekday) : d.kind === 'run' ? runDays.has(d.weekday) : strengthDays.has(d.weekday) || runDays.has(d.weekday),
+  }))
+  return { rings, closed: rings.every((r) => r.pct >= 1), complete, days }
+}
