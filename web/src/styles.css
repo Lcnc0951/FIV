@@ -307,3 +307,13 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .pt-note svg { color: var(--accent); flex: none; margin-top: 2px; }
 .small-seg { padding: 2px; }
 .small-seg button { min-height: 30px; padding: 4px 10px; font-size: 0.78rem; flex: none; }
+
+.pain-card { border-left: 4px solid var(--accent); }
+.pain-card h3 { margin: 0; }
+.chat-action { margin-top: 4px; }
+.bubble p { margin: 0 0 6px; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { margin: 0 0 6px; padding-left: 20px; }
+.bubble li { margin: 2px 0; }
+.bubble-h { font-weight: 700; margin-top: 8px !important; }
+.bubble.pt { white-space: normal; }

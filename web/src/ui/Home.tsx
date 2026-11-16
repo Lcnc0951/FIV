@@ -10,6 +10,7 @@ import { CheckinCard, HealthCheck, SleepCard, WeightCard } from './Daily'
 import { ReportCard } from './Report'
 import { sortedScans, useApp } from './state'
 import { FatScale } from './Body'
+import { PainBanner } from './Pain'
 
 export function nextWorkout(days: WorkoutDay[] | undefined, lastDayName?: string): WorkoutDay | undefined {
   if (!days?.length) return undefined
@@ -38,6 +39,7 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
 
       <HealthCheck />
       <CheckinCard />
+      <PainBanner compact />
       <TodayCard start={start} />
       <ReportCard />
       <WeightCard compact />

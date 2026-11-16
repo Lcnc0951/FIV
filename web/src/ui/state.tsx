@@ -5,7 +5,8 @@ import type { Checkin, WeightEntry } from '../engine/daily'
 import { analyzeBody, planPosture } from '../engine/analyzer'
 import { generateProgram, prescription, type TrainingProgram } from '../engine/generator'
 import { exercise } from '../engine/library'
-import type { BodyScan, Profile, ProfileData, TrainingLocation, WorkoutEntry } from '../engine/types'
+import { activeTemp, applyPain } from '../engine/pain'
+import type { BodyScan, Limitation, Profile, ProfileData, TrainingLocation, WorkoutEntry } from '../engine/types'
 
 export function profileData(p: Profile, loc?: TrainingLocation): ProfileData {
   const location = loc ?? activeLocation(p)
@@ -36,6 +37,11 @@ interface Ctx {
   saveWeight(w: WeightEntry): Promise<void>
   /** Starter ny treningsperiode: nytt program med siste skann og profil. */
   newCycle(): Promise<void>
+  /** Aktive midlertidige plager og øvelsene som er tatt ut av programmet. */
+  pain: { areas: Limitation[]; until: Record<string, string>; removed: string[] }
+  /** Tilpasser programmet for en plage i et antall dager (endrer ikke treningsperioden). */
+  setTempLimitation(area: Limitation, days: number): Promise<void>
+  clearTempLimitation(area: Limitation): Promise<void>
 }
 
 const AppCtx = createContext<Ctx | null>(null)
@@ -147,14 +153,30 @@ export function AppProvider({ initial, backend, children }: { initial: AppData &
     for (const w of entries) await backend.saveWorkout(w)
   }, [backend])
 
+  const setTempLimitation = useCallback(async (area: Limitation, days: number) => {
+    const until = new Date(); until.setDate(until.getDate() + days); until.setHours(23, 59, 0, 0)
+    const rest = activeTemp(data.profile.tempLimitations).filter((t) => t.area !== area)
+    const profile = { ...data.profile, tempLimitations: [...rest, { area, since: new Date().toISOString(), until: until.toISOString() }] }
+    setData((d) => ({ ...d, profile })); await backend.saveProfile(profile)
+  }, [backend, data.profile])
+
+  const clearTempLimitation = useCallback(async (area: Limitation) => {
+    const profile = { ...data.profile, tempLimitations: (data.profile.tempLimitations ?? []).filter((t) => t.area !== area) }
+    setData((d) => ({ ...d, profile })); await backend.saveProfile(profile)
+  }, [backend, data.profile])
+
   const value = useMemo<Ctx>(() => {
     const s = sortedScans(data.scans)
     const loc = activeLocation(data.profile)
+    const temp = activeTemp(data.profile.tempLimitations)
+    const areas = temp.map((t) => t.area)
+    const adjusted = applyPain(data.programs[loc.id], areas)
     return {
-      data, backend, profile: data.profile, pd: profileData(data.profile), latest: s[0], program: data.programs[loc.id],
-      saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle,
+      data, backend, profile: data.profile, pd: profileData(data.profile), latest: s[0], program: adjusted.program,
+      pain: { areas, until: Object.fromEntries(temp.map((t) => [t.area, t.until])), removed: adjusted.removed },
+      saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation,
     }
-  }, [data, backend, saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle])
+  }, [data, backend, saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation])
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>
 }

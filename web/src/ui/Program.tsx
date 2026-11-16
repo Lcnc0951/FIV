@@ -6,6 +6,8 @@ import { DrillRow } from './Body'
 import { WeekEditor } from './Week'
 import { estimateMinutes, supersets } from '../engine/extras'
 import { CycleBanner } from './Daily'
+import { PainBanner } from './Pain'
+import { painBlocked } from '../engine/pain'
 import { Bar, Card, Icon, Sheet, Tag } from './kit'
 import { animationFor, StickFigure } from './StickFigure'
 import { activeLocation, useApp } from './state'
@@ -30,6 +32,7 @@ export function Program({ startWorkout }: { startWorkout: (d: WorkoutDay) => voi
         </div>
       )}
       <CycleBanner />
+      <PainBanner />
       <WeekEditor />
       {!program ? (
         <Card><p>Ingen program for {loc.name} ennå.</p><button className="btn primary" onClick={() => regenerate(loc.id)}>Lag program</button></Card>
@@ -121,11 +124,11 @@ export function ExerciseRow({ p, onClick }: { p: Prescription; onClick: () => vo
 }
 
 export function ExerciseSheet({ p, onClose, allowSwap = true }: { p: Prescription | null; onClose: () => void; allowSwap?: boolean }) {
-  const { profile, swap } = useApp()
+  const { profile, swap, pain } = useApp()
   const e = p ? exercise(p.exerciseId) : undefined
   return (
     <Sheet open={!!e} onClose={onClose} title={e?.name ?? ''}>
-      {e && p && <ExerciseDetail e={e} p={p} alts={allowSwap ? alternatives(e, activeLocation(profile), profile.limitations, profile.preferFreeWeights).slice(0, 6) : []}
+      {e && p && <ExerciseDetail e={e} p={p} alts={allowSwap ? alternatives(e, activeLocation(profile), profile.limitations, profile.preferFreeWeights).filter((a) => !painBlocked(a.id, pain.areas)).slice(0, 6) : []}
         onSwap={(alt) => { swap(p.id, alt.id); onClose() }} />}
     </Sheet>
   )

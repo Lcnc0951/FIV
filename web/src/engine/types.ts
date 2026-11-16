@@ -39,6 +39,7 @@ export const EXPERIENCE_LABEL: Record<Experience, string> = {
   beginner: 'Nybegynner (< 1 år)', intermediate: 'Viderekommen (1–3 år)', advanced: 'Erfaren (3+ år)',
 }
 
+export interface TempLimitation { area: Limitation; since: string; until: string }
 export const LIMITATION_LABEL: Record<Limitation, string> = { knee: 'Kne', lowerBack: 'Korsrygg', shoulder: 'Skulder' }
 
 export const PHYSIQUE_INFO: Record<PhysiqueGoal, { label: string; detail: string; bias: Partial<Record<Muscle, number>> }> = {
@@ -125,6 +126,8 @@ export interface Profile {
   kcalOffset?: number
   /** Velg manualer, kettlebell og strikk fremfor kabelmaskin. */
   preferFreeWeights?: boolean
+  /** Midlertidige plager (fra PT-chatten): programmet tilpasses til datoen. */
+  tempLimitations?: TempLimitation[]
   /** Korreksjonsfaktorer for kameraskann, lært fra målebånd (f.eks. waist: 1.05). */
   calibration?: Partial<Record<'neck' | 'chest' | 'waist' | 'hip' | 'arm' | 'thigh', number>>
   /** Helsesjekk (PAR-Q+): svar per spørsmål. */
