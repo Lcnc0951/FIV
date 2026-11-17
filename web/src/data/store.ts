@@ -21,6 +21,7 @@ export interface Backend {
   saveScan(s: BodyScan): Promise<void>
   deleteScan(id: string): Promise<void>
   saveWorkout(w: WorkoutEntry): Promise<void>
+  deleteWorkout(id: string): Promise<void>
   saveCheckin(c: Checkin): Promise<void>
   saveWeight(w: WeightEntry): Promise<void>
 }
@@ -40,7 +41,8 @@ class LocalBackend implements Backend {
   async savePrograms(p: Record<string, TrainingProgram>) { this.data.programs = p; this.persist() }
   async saveScan(s: BodyScan) { this.data.scans = [...this.data.scans.filter((x) => x.id !== s.id), s]; this.persist() }
   async deleteScan(id: string) { this.data.scans = this.data.scans.filter((x) => x.id !== id); this.persist() }
-  async saveWorkout(w: WorkoutEntry) { this.data.workouts.push(w); this.persist() }
+  async saveWorkout(w: WorkoutEntry) { this.data.workouts = [...this.data.workouts.filter((x) => x.id !== w.id), w]; this.persist() }
+  async deleteWorkout(id: string) { this.data.workouts = this.data.workouts.filter((x) => x.id !== id); this.persist() }
   async saveCheckin(c: Checkin) { this.data.checkins = [...this.data.checkins.filter((x) => x.date !== c.date), c]; this.persist() }
   async saveWeight(w: WeightEntry) { this.data.weights = [...this.data.weights.filter((x) => x.date !== w.date), w]; this.persist() }
 }
@@ -81,6 +83,7 @@ class CloudBackend implements Backend {
   saveScan(s: BodyScan) { return this.write(() => this.db.doc(`${this.root}/scans/${s.id}`).set(JSON.parse(JSON.stringify(s)))) }
   deleteScan(id: string) { return this.write(() => this.db.doc(`${this.root}/scans/${id}`).delete()) }
   saveWorkout(w: WorkoutEntry) { return this.write(() => this.db.doc(`${this.root}/workouts/${w.id}`).set(JSON.parse(JSON.stringify(w)))) }
+  deleteWorkout(id: string) { return this.write(() => this.db.doc(`${this.root}/workouts/${id}`).delete()) }
   saveCheckin(c: Checkin) { return this.write(() => this.db.doc(`${this.root}/checkins/${c.date}`).set(JSON.parse(JSON.stringify(c)))) }
   saveWeight(w: WeightEntry) { return this.write(() => this.db.doc(`${this.root}/weights/${w.date}`).set({ ...w })) }
 }

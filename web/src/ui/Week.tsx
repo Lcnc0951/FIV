@@ -18,7 +18,7 @@ export type StartSession =
 /** Logg over løpeøkter (for progresjon). */
 export function useRunLogs(): RunLog[] {
   const { data } = useApp()
-  return data.workouts.filter((w) => w.run).map((w) => ({ ...w.run!, date: w.date }))
+  return data.workouts.filter((w) => w.run).map((w) => ({ ...w.run!, date: w.date, note: w.note }))
 }
 
 export function useWeek() {
@@ -167,6 +167,8 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
   const [rpe, setRpe] = useState(7)
   const [avgHR, setAvgHR] = useState('')
   const [km, setKm] = useState('')
+  const [note, setNote] = useState('')
+  const doneRef = useRef<HTMLDivElement>(null)
   const total = totalSeconds(segs)
   const [elapsed, setElapsed] = useState(0)
   const [running, setRunning] = useState(false)
@@ -219,11 +221,15 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
   }
   useEffect(() => () => { wake.current?.release().catch(() => undefined) }, [])
 
+  const [stopped, setStopped] = useState(false)
+  const showLog = finished || stopped
+  useEffect(() => { if (showLog) setTimeout(() => doneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 300) }, [showLog])
   const save = async () => {
     const hardReps = segs.filter((x) => x.intensity === 'hard').length
     const tempoMin = Math.round((segs.find((x) => x.intensity === 'moderat')?.seconds ?? 0) / 60)
     await logWorkout([{ id: uid(), date: new Date().toISOString(), dayName: RUN_INFO[run].label, exerciseId: `run:${run}`, sets: [],
-      run: { type: run, rpe, avgHR: avgHR ? +avgHR : undefined, km: km ? +km.replace(',', '.') : undefined, reps: hardReps || undefined, minutes: tempoMin || undefined } }])
+      note: note.trim() || undefined,
+      run: { type: run, rpe, avgHR: avgHR ? +avgHR : undefined, km: km ? +km.replace(',', '.') : undefined, reps: (stopped ? hardDone : hardReps) || undefined, minutes: (stopped ? Math.round(elapsed / 60) : tempoMin) || undefined } }])
     onClose()
   }
   const hr = effectiveMaxHR(new Date().getFullYear() - profile.birthYear, profile.watch?.maxHR)
@@ -241,20 +247,27 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
       </div>
       <div className="bar"><div className="bar-fill" style={{ width: `${Math.min(100, (elapsed / total) * 100)}%` }} /></div>
       {hardTotal > 0 && <p className="center small muted">{hardDone} av {hardTotal} drag gjort · totalt {Math.round(total / 60)} min</p>}
-      {!finished
-        ? <button className="btn primary big full" onClick={toggle}>{running ? 'Pause' : elapsed > 0 ? 'Fortsett' : 'Start'}</button>
+      {!showLog
+        ? <>
+            <button className="btn primary big full" onClick={toggle}>{running ? 'Pause' : elapsed > 0 ? 'Fortsett' : 'Start'}</button>
+            {elapsed >= 60 && <button className="btn ghost full" onClick={() => { if (running) toggle(); setStopped(true) }}>Avslutt tidlig og logg økta</button>}
+          </>
         : (
-          <Card>
+          <div ref={doneRef}><Card>
             <h3>Hvordan gikk det?</h3>
+            {stopped && !finished && <p className="muted small">Avsluttet etter {Math.round(elapsed / 60)} min og {hardDone} drag.</p>}
             <label className="field"><span>Hvor tungt føltes det? <strong>{rpe}/10</strong> {rpe <= 6 ? '(lett)' : rpe <= 8 ? '(passe hardt)' : '(maks)'}</span>
               <input id="rpe" type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(+e.target.value)} /></label>
             <div className="grid2">
               <label className="field"><span>Snittpuls (valgfritt)</span><input id="run-hr" type="number" inputMode="numeric" value={avgHR} onChange={(e) => setAvgHR(e.target.value)} /></label>
-              <label className="field"><span>Km (valgfritt)</span><input id="run-km" type="number" inputMode="decimal" step={0.1} value={km} onChange={(e) => setKm(e.target.value)} /></label>
+              <label className="field"><span>Km (valgfritt)</span><input id="run-km" type="text" inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value)} /></label>
             </div>
-            <p className="muted small">Neste økt av samme type tilpasses: lett føles → flere drag eller høyere fart.</p>
+            <label className="field"><span>Kommentar (valgfritt)</span>
+              <textarea id="run-note" className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+                placeholder="F.eks. «Tredemølle 12 km/t i dragene, siste drag var tungt» eller «litt vondt i leggen»" /></label>
+            <p className="muted small">Neste økt av samme type tilpasses etter hvor tungt det føltes og det du skriver her. Du kan endre alt senere under «Gjennomførte økter» på Hjem.</p>
             <button className="btn primary big full" onClick={save}>Lagre økta</button>
-          </Card>
+          </Card></div>
         )}
       <Card>
         <p className="small"><strong>Dagens økt:</strong> {hardTotal > 0 ? `${segs.filter((x) => x.intensity === 'hard').length} drag · ` : ''}{Math.round(total / 60)} min totalt{(session.scale ?? 1) < 1 ? ' (redusert etter dagsform/lett uke)' : ''}.</p>

@@ -34,9 +34,10 @@ function useContextText(): string {
   const cycle = cycleInfo(profile.cycleStart, program?.mesocycle.length ?? 5)
   const recent = [...data.workouts].sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((w) => {
     const d = w.date.slice(0, 10)
-    if (w.run) return `${d} ${RUN_INFO[w.run.type].label}: føltes ${w.run.rpe}/10${w.run.avgHR ? `, snittpuls ${w.run.avgHR}` : ''}${w.run.km ? `, ${w.run.km} km` : ''}`
+    const n = w.note ? ` — kommentar: «${w.note}»` : ''
+    if (w.run) return `${d} ${RUN_INFO[w.run.type].label}: føltes ${w.run.rpe}/10${w.run.reps ? `, ${w.run.reps} drag` : ''}${w.run.minutes ? `, ${w.run.minutes} min` : ''}${w.run.avgHR ? `, snittpuls ${w.run.avgHR}` : ''}${w.run.km ? `, ${w.run.km} km` : ''}${n}`
     const e = exercise(w.exerciseId)
-    return `${d} ${e?.name ?? w.exerciseId}: ${w.sets.map((s) => `${s.weightKg}kg×${s.reps}`).join(', ')}`
+    return `${d} ${e?.name ?? w.exerciseId}: ${w.sets.map((s) => `${s.weightKg}kg×${s.reps}`).join(', ')}${n}`
   })
   return [
     `Dato: ${new Date().toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`,
@@ -56,7 +57,7 @@ function useContextText(): string {
   ].join('\n')
 }
 
-const RULES = (context: string) => `Du er en erfaren, varm og direkte personlig trener (PT) i appen FIV, med god kunnskap om idrettsskader og opptrening (som en PT som samarbeider tett med fysioterapeut). Svar alltid på norsk bokmål, kort og konkret (maks ca. 150 ord for vanlige spørsmål). Bygg på forskningsbasert praksis (progressiv overbelastning, RIR, 10–20 harde sett per muskel per uke, 4×4 og sone 2, protein 1,6–2,2 g/kg). Bruk dataene under om brukeren, og nevn øvelsene deres ved navn. Foreslå konkrete endringer i dagens økt når det passer.
+const RULES = (context: string) => `Du er en erfaren, varm og direkte personlig trener (PT) i appen FIV, med god kunnskap om idrettsskader og opptrening (som en PT som samarbeider tett med fysioterapeut). Svar alltid på norsk bokmål, kort og konkret (maks ca. 150 ord for vanlige spørsmål). Bygg på forskningsbasert praksis (progressiv overbelastning, RIR, 10–20 harde sett per muskel per uke, 4×4 og sone 2, protein 1,6–2,2 g/kg). Bruk dataene under om brukeren, og nevn øvelsene deres ved navn. Ta hensyn til brukerens kommentarer til siste økter. Foreslå konkrete endringer i dagens økt når det passer.
 
 BRUKERENS DATA:
 ${context}`

@@ -1,4 +1,5 @@
 // Daglig tilpasning: dagsform, vekttrend, løpeprogresjon, treningsperiode og helsesjekk.
+import { quote, readNote } from './notes'
 import type { Goal, WatchData } from './types'
 import { RUN_INFO, type DayPlan, type RunType } from './week'
 
@@ -100,7 +101,7 @@ export function kcalSuggestion(goal: Goal, trend: WeightTrend): { kcal: number; 
 
 // ---------------- Løpeprogresjon ----------------
 
-export interface RunLog { type: RunType; date: string; rpe: number; avgHR?: number; km?: number; reps?: number; minutes?: number; speed?: number }
+export interface RunLog { type: RunType; date: string; rpe: number; avgHR?: number; km?: number; reps?: number; minutes?: number; speed?: number; note?: string }
 export interface RunParams { reps: number; minutes: number; note: string }
 
 const BASE: Record<RunType, RunParams> = {
@@ -113,6 +114,26 @@ const BASE: Record<RunType, RunParams> = {
 /** Neste økt ut fra forrige av samme type. RPE = hvor tungt det føltes (1–10). */
 export function nextRun(type: RunType, history: RunLog[]): RunParams {
   const last = [...history].filter((h) => h.type === type).sort((a, b) => b.date.localeCompare(a.date))[0]
+  const p = nextRunBase(type, last)
+  // Siste løp uansett type: smerte eller en svært tung økt teller også for neste økt av en annen type
+  const latest = [...history].sort((a, b) => b.date.localeCompare(a.date))[0]
+  const other = latest && latest !== last ? readNote(latest.note) : undefined
+  if (other?.signal === 'pain') return { ...p, note: `Sist (${RUN_INFO[latest.type].short}) skrev du ${quote(other.text)}. Ta det roligere i dag: kontrollert fart, og stopp hvis smerten går over 3/10.` }
+  if (other?.signal === 'tooHard') return { ...p, note: `Sist (${RUN_INFO[latest.type].short}) skrev du ${quote(other.text)}. ${p.note} Er du fortsatt sliten, hold litt igjen.` }
+  const n = readNote(last?.note)
+  if (!n) return p
+  // Kommentaren fra sist veier tyngre enn tallene
+  if (n.signal === 'pain') {
+    const reps = type === 'short45_20' ? Math.max(8, (last!.reps ?? 10) - 2) : p.reps
+    const minutes = type === 'tempo20' ? Math.max(15, (last!.minutes ?? 20) - 5) : p.minutes
+    return { reps, minutes, note: `Du skrev ${quote(n.text)}. Vi holder igjen i dag: ${type === 'intervals4x4' ? 'rolig fart i dragene' : 'kortere økt'}, og stopp hvis det blir verre enn 3/10.` }
+  }
+  if (n.signal === 'tooHard' && last!.rpe < 9) return { ...nextRunBase(type, { ...last!, rpe: 9 }), note: `Du skrev ${quote(n.text)}. ${nextRunBase(type, { ...last!, rpe: 9 }).note}` }
+  if (n.signal === 'tooEasy' && last!.rpe > 7) return { ...nextRunBase(type, { ...last!, rpe: 7 }), note: `Du skrev ${quote(n.text)}. ${nextRunBase(type, { ...last!, rpe: 7 }).note}` }
+  return { ...p, note: `${p.note} Notat fra sist: ${quote(n.text)}` }
+}
+
+function nextRunBase(type: RunType, last?: RunLog): RunParams {
   if (!last) return { ...BASE[type], note: type === 'short45_20' ? 'Første gang: 10 drag. Vi bygger opp mot 15.' : 'Første gang i appen — finn en fart du klarer å holde jevnt.' }
   const easy = last.rpe <= 7, hard = last.rpe >= 9
   switch (type) {

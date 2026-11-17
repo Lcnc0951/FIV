@@ -36,3 +36,24 @@ describe('plager', () => {
     expect(activeTemp(list, new Date('2026-01-10'))).toHaveLength(0)
   })
 })
+
+import { readNote } from './notes'
+import { nextRun } from './daily'
+describe('kommentarer til økter', () => {
+  it('tolker kommentarer', () => {
+    expect(readNote('Siste drag var veldig tungt')?.signal).toBe('tooHard')
+    expect(readNote('Føltes lett, kunne tatt mer')?.signal).toBe('tooEasy')
+    expect(readNote('Ikke så tungt i dag')?.signal).toBe('tooEasy')
+    expect(readNote('Litt vondt i leggen')).toMatchObject({ signal: 'pain', area: 'knee' })
+    expect(readNote('Tredemølle 12 km/t')?.signal).toBeUndefined()
+    expect(readNote('  ')).toBeUndefined()
+  })
+  it('kommentaren styrer neste løpeøkt', () => {
+    const base = { type: 'short45_20' as const, date: '2026-11-17', rpe: 7, reps: 12 }
+    expect(nextRun('short45_20', [base]).reps).toBe(13)
+    expect(nextRun('short45_20', [{ ...base, note: 'helt sprengt, klarte ikke siste drag' }]).reps).toBe(11)
+    const pain = nextRun('short45_20', [{ ...base, note: 'vondt i kneet' }])
+    expect(pain.reps).toBe(10); expect(pain.note).toContain('vondt i kneet')
+    expect(nextRun('short45_20', [{ ...base, note: 'Tredemølle 12 km/t' }]).note).toContain('Tredemølle')
+  })
+})

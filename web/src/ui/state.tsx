@@ -33,6 +33,8 @@ interface Ctx {
   regenerate(locationId?: string): Promise<void>
   swap(prescriptionId: string, exerciseId: string): Promise<void>
   logWorkout(entries: WorkoutEntry[]): Promise<void>
+  /** Erstatter en gjennomført økt (alle oppføringene med samme økt-nøkkel). */
+  editSession(remove: string[], entries: WorkoutEntry[]): Promise<void>
   saveCheckin(c: Checkin): Promise<void>
   saveWeight(w: WeightEntry): Promise<void>
   /** Starter ny treningsperiode: nytt program med siste skann og profil. */
@@ -165,6 +167,14 @@ export function AppProvider({ initial, backend, children }: { initial: AppData &
     setData((d) => ({ ...d, profile })); await backend.saveProfile(profile)
   }, [backend, data.profile])
 
+  const editSession = useCallback(async (remove: string[], entries: WorkoutEntry[]) => {
+    const keep = new Set(entries.map((e) => e.id))
+    const gone = remove.filter((id) => !keep.has(id))
+    setData((d) => ({ ...d, workouts: [...d.workouts.filter((w) => !remove.includes(w.id)), ...entries] }))
+    for (const id of gone) await backend.deleteWorkout(id)
+    for (const w of entries) await backend.saveWorkout(w)
+  }, [backend])
+
   const value = useMemo<Ctx>(() => {
     const s = sortedScans(data.scans)
     const loc = activeLocation(data.profile)
@@ -174,9 +184,9 @@ export function AppProvider({ initial, backend, children }: { initial: AppData &
     return {
       data, backend, profile: data.profile, pd: profileData(data.profile), latest: s[0], program: adjusted.program,
       pain: { areas, until: Object.fromEntries(temp.map((t) => [t.area, t.until])), removed: adjusted.removed },
-      saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation,
+      saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation, editSession,
     }
-  }, [data, backend, saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation])
+  }, [data, backend, saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation, editSession])
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>
 }

@@ -232,6 +232,8 @@ export interface WorkoutEntry {
   dayName: string
   exerciseId: string
   sets: SetLog[]
+  /** Brukerens kommentar til økta (lik på alle øvelser i samme økt). Brukes når neste økt lages. */
+  note?: string
   /** Løpeøkter: hvor tungt (1–10), puls, distanse, antall drag / minutter. */
   run?: { type: RunType; rpe: number; avgHR?: number; km?: number; reps?: number; minutes?: number }
 }

@@ -7,11 +7,17 @@ import { uid, type SetLog } from '../engine/types'
 import { Card, Icon, nb, speak, Tag } from './kit'
 import { ExerciseSheet } from './Program'
 import { activeLocation, useApp } from './state'
+import { quote, readNote } from '../engine/notes'
+import { AREA_TEXT } from '../engine/pain'
 
 export function Workout({ day: original, volumeFactor = 1, onClose }: { day: WorkoutDay; volumeFactor?: number; onClose: () => void }) {
   // Lett uke / dårlig dagsform: færre sett
   const day: WorkoutDay = volumeFactor >= 1 ? original : { ...original, exercises: original.exercises.map((p) => ({ ...p, sets: Math.max(1, Math.round(p.sets * volumeFactor)), rir: p.rir + (volumeFactor <= 0.5 ? 1 : 0) })) }
-  const { data, profile, logWorkout } = useApp()
+  const { data, profile, logWorkout, pain, setTempLimitation } = useApp()
+  const [note, setNote] = useState('')
+  // Kommentaren fra forrige gang samme økt ble gjort
+  const prev = [...data.workouts].filter((w) => !w.run && w.dayName === original.name && w.note).sort((a, b) => b.date.localeCompare(a.date))[0]
+  const lastNote = readNote(prev?.note)
   const [logs, setLogs] = useState<Record<string, SetLog[]>>({})
   const [restUntil, setRestUntil] = useState<number | null>(null)
   const [restLabel, setRestLabel] = useState('Pause')
@@ -55,7 +61,7 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
     const date = new Date().toISOString()
     await logWorkout(day.exercises.flatMap((p) => {
       const sets = (logs[p.id] ?? []).filter((s) => s.reps > 0)
-      return sets.length ? [{ id: uid(), date, dayName: day.name, exerciseId: p.exerciseId, sets }] : []
+      return sets.length ? [{ id: uid(), date, dayName: day.name, exerciseId: p.exerciseId, sets, note: note.trim() || undefined }] : []
     }))
     speak('Bra jobba! Økta er lagret.')
     onClose()
@@ -69,6 +75,15 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
         <button className="btn ghost" onClick={onClose}><Icon name="back" /> Avslutt</button>
         <h1 className="h2">{day.name}</h1>
       </header>
+      {lastNote && (
+        <div className="adjust small stack-s">
+          <span><Icon name="info" size={14} /> <strong>Notat fra sist:</strong> {quote(lastNote.text)}</span>
+          <span className="muted">{lastNote.signal === 'pain' ? 'Vektene holdes som sist i dag.' : lastNote.signal === 'tooHard' ? 'Vektene holdes som sist i dag, ingen økning.' : lastNote.signal === 'tooEasy' ? 'Føltes lett: gå gjerne opp i vekt der du når toppen av rep-spennet.' : 'Ta hensyn til dette i dag.'}</span>
+          {lastNote.signal === 'pain' && lastNote.area && !pain.areas.includes(lastNote.area) && (
+            <button className="btn small" onClick={() => setTempLimitation(lastNote.area!, 7)}>Tilpass programmet for {AREA_TEXT[lastNote.area]} i 7 dager</button>
+          )}
+        </div>
+      )}
       {volumeFactor < 1 && <p className="adjust small"><Icon name="info" size={14} /> Lettere økt i dag: {Math.round(volumeFactor * 100)} % av settene.</p>}
       {restUntil && (
         <div className="rest-bar" role="timer" aria-live="polite">
@@ -86,6 +101,12 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
         const e = exercise(p.exerciseId)
         if (!e) return null
         const sug = suggest(p, last(e.id), dumbbells)
+        const top = Math.max(0, ...last(e.id).map((x) => x.weightKg))
+        if (lastNote?.signal && lastNote.signal !== 'tooEasy' && sug.weightKg && sug.weightKg > top && top > 0) {
+          // Notatet sa at forrige økt var tung eller gjorde vondt: ikke øk vekten i dag
+          sug.weightKg = top; sug.targetReps = Math.min(sug.targetReps, p.repsMax)
+          sug.message = lastNote.signal === 'pain' ? 'Samme vekt som sist på grunn av notatet ditt. Stopp hvis smerten går over 3/10.' : 'Samme vekt som sist, siden forrige økt føltes tung. Sikt på bedre kvalitet.'
+        }
         const sets = logs[p.id] ?? []
         const template: SetLog = sets[sets.length - 1] ?? { weightKg: sug.weightKg ?? 0, reps: sug.targetReps, rir: p.rir }
         return (
@@ -117,6 +138,12 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
       })}
       </div>
       ))}
+      <Card>
+        <label className="field"><span>Kommentar til økta (valgfritt)</span>
+          <textarea id="workout-note" className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)}
+            placeholder="F.eks. «Benken føltes lett» eller «vondt i skulderen på skulderpress»" /></label>
+        <p className="muted small">Brukes når neste økt lages, og PT-en ser den.</p>
+      </Card>
       <button className="btn primary big full" disabled={!anyLogged} onClick={finish}>Fullfør økta</button>
       <ExerciseSheet p={info} onClose={() => setInfo(null)} allowSwap={false} />
     </div>

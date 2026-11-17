@@ -346,3 +346,6 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 .ring-history button { display: grid; justify-items: center; gap: 2px; background: none; border: 1px solid transparent; border-radius: 12px; padding: 4px 6px; color: var(--muted); cursor: pointer; flex: 1; }
 .ring-history button.on { border-color: var(--line); background: var(--card-2); color: var(--fg); }
 @media (prefers-reduced-motion: reduce) { .ring-arc { transition: none; } }
+textarea.input { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; min-height: 64px; }
+.session-row { align-items: center; text-align: left; gap: 8px; }
+.btn.bad { color: var(--bad); border-color: var(--bad); }
