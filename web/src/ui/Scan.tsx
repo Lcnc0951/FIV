@@ -85,11 +85,24 @@ function LidarCard({ weight, onResult, enabled }: { weight: number; onResult: (m
   const [err, setErr] = useState('')
   const file = useRef<HTMLInputElement>(null)
   void weight
+  // Import av fil fra FIV LiDAR-appen virker alltid, også når LiDAR ikke er valgt som skannemetode
+  const importer = (
+    <>
+      <button className="btn full" onClick={() => file.current?.click()}><Icon name="upload" /> Importer skann fra iPhone-appen (JSON)</button>
+      <input ref={file} type="file" accept="application/json,.json,text/plain,.txt" hidden onChange={async (e) => {
+        const f = e.target.files?.[0]; if (!f) return
+        try { onResult(parseLidarJson(await f.text())) } catch (x) { setErr((x as Error).message) }
+        e.target.value = ''
+      }} />
+      {err && <p className="bad small">{err}</p>}
+    </>
+  )
   if (!enabled) {
     return (
-      <Card className="locked">
-        <div className="row gap"><Icon name="lidar" size={26} /><div><strong>LiDAR-skanning</strong> <Tag tone="plain">ikke aktivert</Tag>
-          <p className="muted small">Ekte 3D-dybde med iPhone Pro. Ligger klar — aktiveres under Profil → Skannemetode når FIV-appen for iPhone er installert.</p></div></div>
+      <Card>
+        <div className="row gap"><Icon name="lidar" size={26} /><div><strong>LiDAR-skanning</strong> <Tag tone="plain">via FIV LiDAR</Tag>
+          <p className="muted small">Skann med LiDAR i FIV LiDAR-appen på iPhone Pro, lagre JSON-filen i Filer og importer den her. Direkte LiDAR-skann aktiveres under Profil → Skannemetode.</p></div></div>
+        {importer}
       </Card>
     )
   }
@@ -98,13 +111,7 @@ function LidarCard({ weight, onResult, enabled }: { weight: number; onResult: (m
       <div className="row gap"><Icon name="lidar" size={26} /><div><strong>LiDAR-skanning</strong> <Tag tone={status.available ? 'good' : 'warn'}>{status.available ? 'klar' : 'venter på iPhone-appen'}</Tag>
         <p className="muted small">{status.reason}</p></div></div>
       {status.available && <button className="btn primary full" onClick={() => requestLidarScan(profile.heightCm).then(onResult, (e) => setErr(String(e.message ?? e)))}>Start LiDAR-skann</button>}
-      <button className="btn full" onClick={() => file.current?.click()}><Icon name="upload" /> Importer skann fra iPhone-appen (JSON)</button>
-      <input ref={file} type="file" accept="application/json,.json,text/plain,.txt" hidden onChange={async (e) => {
-        const f = e.target.files?.[0]; if (!f) return
-        try { onResult(parseLidarJson(await f.text())) } catch (x) { setErr((x as Error).message) }
-        e.target.value = ''
-      }} />
-      {err && <p className="bad small">{err}</p>}
+      {importer}
     </Card>
   )
 }

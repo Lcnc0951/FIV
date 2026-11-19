@@ -9,6 +9,10 @@ Status per november 2026. ✅ = ferdig i koden, men ikke kompilert eller testet 
 
 Nettappen i `web/` har samme PT-motor (TypeScript-port, 18 tester) og skanner med kamera + AI (MediaPipe) og høyden som målestokk. LiDAR-modus ligger klar (Profil → Skannemetode), og skann fra iPhone-appen kan importeres som JSON. Neste steg her: validere kameramålene mot målebånd (som 1.1) og legge til dra-og-juster av målepunkter på bildet.
 
+## FIV LiDAR (egen app) — ✅ skrevet, ikke kompilert
+
+Egen app i `FIVLidar/` for LiDAR-opptak: kroppsmål som JSON-fil til FIV, dybdebilder, dybdevideo, punktsky og 3D-modell (USDZ/OBJ/PLY). Den gjenbruker skannemotoren, så den er også en enklere måte å teste LiDAR-skanningen på (0.4–0.5) før hele FIV-appen er på plass. Neste steg: bygg skjemaet `FIVLidar` i Xcode og rett kompileringsfeil.
+
 ## Fase 0 – Få iPhone-appen til å kjøre (blokkerende for LiDAR)
 
 | # | Oppgave | Hvem | Status |

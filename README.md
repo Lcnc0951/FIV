@@ -33,6 +33,35 @@ open FIV.xcodeproj
 2. Koble til iPhonen, velg den som mål og trykk ▶︎.
 3. Kjør testene med ⌘U (PT-motoren er ren Swift og testes uten kamera).
 
+## FIV LiDAR – egen app for LiDAR-opptak
+
+`FIVLidar/` er en egen, enklere iPhone-app (target `FIVLidar`, vises som **FIV LiDAR**) som bruker LiDAR-sensoren og lagrer alt som vanlige filer. Den gjenbruker skannemotoren fra FIV (`FIV/Scanning`), så kroppsmålene blir de samme.
+
+| Fane | Hva den gjør | Filer som lagres |
+|---|---|---|
+| **Kroppsmål** | Samme to-posisjons skann som FIV (forfra + fra siden, med taleveiledning) | `FIV-skann <dato>.json` (kan importeres i FIV), `forfra.jpg`, `fra-siden.jpg` |
+| **Dybdekamera** | Live dybdekart i farger (rødt = nært, blått = langt), avstand til midten av bildet, visning Blandet / Dybde / Kamera | Bilde: `foto.jpg`, `dybde-farger.jpg`, `dybde-blandet.jpg`, `dybde-mm.png` (rå 16-bit dybde i mm), `punktsky.ply`, `info.json`. Video: `dybdevideo.mov` (1080×1440, det du ser på skjermen) |
+| **3D-skann** | Scenerekonstruksjon med LiDAR. Gå sakte rundt en person, gjenstand eller et rom | `modell.usdz` (åpnes rett på iPhone/Mac), `modell.obj`, `modell.ply`, `forhandsvisning.jpg` |
+| **Filer** | Alle opptak, forhåndsvisning (Quick Look) og deling | – |
+
+Bilder og videoer kan også lagres i Bilder-appen (bryter i hver fane). Alle mapper ligger i Filer-appen under *På min iPhone → FIV LiDAR*.
+
+**Få kroppsmålene inn i FIV:** del JSON-filen til *Lagre i Filer* (eller AirDrop), åpne FIV og gå til *Kropp → Skann → Importer skann fra iPhone-appen (JSON)*. Nettappen godtar filen uansett hvilken skannemetode som er valgt.
+
+Filformatet:
+
+```json
+{
+  "format": "fiv-scan", "version": 1, "app": "FIV LiDAR",
+  "date": "2026-11-19T16:40:12Z", "weightKg": 82.4,
+  "measurements": { "waistCm": 86.2, "hipCm": 99.1, "neckCm": 38.5, "usedLiDAR": true, "sampleCount": 60 }
+}
+```
+
+`measurements` har de samme feltnavnene som `ScanMeasurements` i Swift og i nettappen.
+
+**Bygg:** `xcodegen generate`, åpne `FIV.xcodeproj`, velg skjemaet **FIVLidar**, velg utviklerteam under *Signing & Capabilities* og kjør på en iPhone Pro (12 Pro eller nyere). LiDAR virker ikke i simulatoren.
+
 ## Arkitektur
 
 ```

@@ -28,6 +28,29 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UIRequiredDeviceCapabilities: arkit
+  FIVLidar:
+    type: application
+    platform: iOS
+    sources:
+      - path: FIVLidar
+      # Gjenbruker skannemotoren og måletypene fra FIV-appen
+      - path: FIV/Scanning
+      - path: FIV/Models/Domain.swift
+      - path: FIV/Coach/BodyComposition.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: no.fiv.lidar
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "FIV LiDAR"
+        INFOPLIST_KEY_NSCameraUsageDescription: "FIV LiDAR bruker kameraet og LiDAR-sensoren til å måle kroppen, ta dybdebilder og lage 3D-skann. Alt lagres bare på telefonen."
+        INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: "FIV LiDAR lagrer bilder og videoer du tar i Bilder-appen."
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIRequiredDeviceCapabilities: arkit
   FIVTests:
     type: bundle.unit-test
     platform: iOS
@@ -49,3 +72,7 @@ schemes:
     test:
       targets:
         - FIVTests
+  FIVLidar:
+    build:
+      targets:
+        FIVLidar: all
