@@ -52,6 +52,7 @@ function useContextText(): string {
     `Klokke: VO2maks ${profile.watch?.vo2max ?? '–'}, makspuls sett ${profile.watch?.maxHR ?? '–'}, hvilepuls ${profile.watch?.restingHR ?? '–'}, skritt/dag ${profile.watch?.steps ?? '–'}, aktiv energi ${profile.watch?.activeKcal ?? '–'} kcal.`,
     `Dagsform i dag: ${r ? `${r.level} (${r.reasons.join(', ') || 'ok'})` : 'ikke registrert'}. Vekt 7-dagers snitt: ${wt.avg7?.toFixed(1) ?? '–'} kg, endring siste uke: ${wt.weeklyChangePct?.toFixed(2) ?? '–'} %.`,
     `Styrkeøktene nå: ${program?.days.map((d) => `${d.name}: ${d.exercises.map((x) => exercise(x.exerciseId)?.name ?? x.exerciseId).join(', ')}`).join(' | ') ?? 'ingen'}.`,
+    `Helse: ${profile.sick && !profile.sick.recovered ? `SYK siden ${profile.sick.since.slice(0, 10)}${profile.sick.note ? ` («${profile.sick.note}»)` : ''}` : profile.sick?.recovered ? `var syk ${profile.sick.since.slice(0, 10)}–${profile.sick.recovered}, trapper opp igjen` : 'frisk'}. Sto over siste 14 dager: ${(profile.skips ?? []).filter((s) => Date.now() - new Date(s.date).getTime() < 14 * 864e5).map((s) => `${s.date} ${s.reason}${s.note ? ` («${s.note}»)` : ''}`).join('; ') || 'ingen'}.`,
     `Midlertidig tilpasset for plager: ${pain.areas.map((a) => `${AREA_TEXT[a]} til ${pain.until[a].slice(0, 10)}`).join(', ') || 'nei'}.`,
     `Siste økter:\n${recent.join('\n') || 'ingen logget ennå'}`,
   ].join('\n')

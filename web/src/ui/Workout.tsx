@@ -15,6 +15,18 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
   const day: WorkoutDay = volumeFactor >= 1 ? original : { ...original, exercises: original.exercises.map((p) => ({ ...p, sets: Math.max(1, Math.round(p.sets * volumeFactor)), rir: p.rir + (volumeFactor <= 0.5 ? 1 : 0) })) }
   const { data, profile, logWorkout, pain, setTempLimitation } = useApp()
   const [note, setNote] = useState('')
+  // Stoppeklokke: brukeren trykker selv start og stopp
+  const [clock, setClock] = useState<{ base: number; startedAt: number | null }>({ base: 0, startedAt: null })
+  const [tick, setTick] = useState(0)
+  useEffect(() => {
+    if (!clock.startedAt) return
+    const t = setInterval(() => setTick(Date.now()), 500)
+    return () => clearInterval(t)
+  }, [clock.startedAt])
+  void tick
+  const elapsedMs = clock.base + (clock.startedAt ? Date.now() - clock.startedAt : 0)
+  const toggleClock = () => setClock((c) => (c.startedAt ? { base: c.base + Date.now() - c.startedAt, startedAt: null } : { ...c, startedAt: Date.now() }))
+  const clockText = (ms: number) => { const s = Math.floor(ms / 1000); const h = Math.floor(s / 3600); const m = Math.floor((s % 3600) / 60); return `${h ? `${h}:` : ''}${String(m).padStart(h ? 2 : 1, '0')}:${String(s % 60).padStart(2, '0')}` }
   // Kommentaren fra forrige gang samme økt ble gjort
   const prev = [...data.workouts].filter((w) => !w.run && w.dayName === original.name && w.note).sort((a, b) => b.date.localeCompare(a.date))[0]
   const lastNote = readNote(prev?.note)
@@ -61,7 +73,7 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
     const date = new Date().toISOString()
     await logWorkout(day.exercises.flatMap((p) => {
       const sets = (logs[p.id] ?? []).filter((s) => s.reps > 0)
-      return sets.length ? [{ id: uid(), date, dayName: day.name, exerciseId: p.exerciseId, sets, note: note.trim() || undefined }] : []
+      return sets.length ? [{ id: uid(), date, dayName: day.name, exerciseId: p.exerciseId, sets, note: note.trim() || undefined, durationMin: elapsedMs >= 60_000 ? Math.round(elapsedMs / 60_000) : undefined }] : []
     }))
     speak('Bra jobba! Økta er lagret.')
     onClose()
@@ -75,6 +87,10 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
         <button className="btn ghost" onClick={onClose}><Icon name="back" /> Avslutt</button>
         <h1 className="h2">{day.name}</h1>
       </header>
+      <div className={`stopwatch${clock.startedAt ? ' on' : ''}`}>
+        <div><span className="muted small">Økttid</span><div className="stopwatch-time num">{clockText(elapsedMs)}</div></div>
+        <button className={`btn ${clock.startedAt ? '' : 'primary'}`} onClick={toggleClock}>{clock.startedAt ? 'Stopp' : elapsedMs > 0 ? 'Fortsett' : 'Start'}</button>
+      </div>
       {lastNote && (
         <div className="adjust small stack-s">
           <span><Icon name="info" size={14} /> <strong>Notat fra sist:</strong> {quote(lastNote.text)}</span>
@@ -87,7 +103,7 @@ export function Workout({ day: original, volumeFactor = 1, onClose }: { day: Wor
       {volumeFactor < 1 && <p className="adjust small"><Icon name="info" size={14} /> Lettere økt i dag: {Math.round(volumeFactor * 100)} % av settene.</p>}
       {restUntil && (
         <div className="rest-bar" role="timer" aria-live="polite">
-          <Icon name="timer" /> {restLabel} <strong className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</strong>
+          <Icon name="timer" /> {restLabel === 'Pause' ? 'Pause før neste sett' : restLabel} <strong className="num">{Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</strong>
           <button className="btn small" onClick={() => setRestUntil(null)}>Hopp over</button>
         </div>
       )}

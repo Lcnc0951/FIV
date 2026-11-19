@@ -5,6 +5,7 @@ import { WEEKDAYS } from '../engine/week'
 import { Card } from './kit'
 import { useApp } from './state'
 import { useWeek } from './Week'
+import { excusedDays } from '../engine/absence'
 
 const COLOR: Record<Ring['key'], string> = { strength: 'var(--ring-strength)', run: 'var(--ring-run)', recovery: 'var(--ring-recovery)' }
 const UNIT: Record<Ring['key'], string> = { strength: 'økter', run: 'økter', recovery: 'gode netter' }
@@ -50,9 +51,10 @@ export function WeekRingsCard() {
     .map((x) => new Date(x).getTime()).filter(Number.isFinite)
   const since = dates.length ? new Date(Math.min(...dates)) : now
   const thisMonday = mondayOf(now)
+  const excused = excusedDays(profile.skips, profile.sick, now)
   const weekAt = (back: number): WeekRings => {
     const ws = new Date(thisMonday); ws.setDate(ws.getDate() - 7 * back)
-    return weekRings({ days, workouts: data.workouts, checkins: data.checkins, weekStart: ws, now, since })
+    return weekRings({ days, workouts: data.workouts, checkins: data.checkins, weekStart: ws, now, since, excused })
   }
   const history = [3, 2, 1, 0].filter((b) => { const ws = new Date(thisMonday); ws.setDate(ws.getDate() - 7 * b); ws.setDate(ws.getDate() + 7); return ws > since })
   const w = weekAt(showWeek)
@@ -60,7 +62,9 @@ export function WeekRingsCard() {
   for (let b = 1; b < 52; b++) {
     const ws = new Date(thisMonday); ws.setDate(ws.getDate() - 7 * b)
     if (new Date(ws.getTime() + 7 * 864e5) <= since) break
-    if (weekAt(b).closed) streak++; else break
+    const wb = weekAt(b)
+    if (wb.closed && wb.rings[0].goal + wb.rings[1].goal === 0) continue // hele uka syk: pause, bryter ikke rekken
+    if (wb.closed) streak++; else break
   }
   const title = showWeek === 0 ? 'Uka di' : showWeek === 1 ? 'Forrige uke' : `${showWeek} uker siden`
 
@@ -79,11 +83,12 @@ export function WeekRingsCard() {
           ))}
         </div>
       </div>
+      {w.excusedDays > 0 && <p className="muted small">{w.excusedDays} {w.excusedDays === 1 ? 'dag' : 'dager'} syk eller skadet denne uka. De teller ikke mot målene.</p>}
       {w.closed && <p className="rings-done">{showWeek === 0 ? 'Alle ringene er lukket. Uka er gjennomført! 🎉' : 'Uka ble gjennomført 🎉'}</p>}
       <div className="day-dots" aria-label="Ukas dager">
         {w.days.map((d) => (
-          <div key={d.weekday} className={`day-dot ${d.did ?? d.kind} ${d.did ? 'done' : d.past && d.kind !== 'rest' && !d.beforeStart ? 'missed' : ''}${d.beforeStart ? ' before' : ''}`}
-            title={d.did ? 'Gjennomført' : d.kind === 'rest' ? 'Hvile' : d.beforeStart ? 'Før du startet' : 'Planlagt'}>
+          <div key={d.weekday} className={`day-dot ${d.did ?? d.kind} ${d.did ? 'done' : d.past && d.kind !== 'rest' && !d.beforeStart && !d.excused ? 'missed' : ''}${d.beforeStart ? ' before' : ''}${d.excused && !d.did ? ' excused' : ''}`}
+            title={d.did ? 'Gjennomført' : d.excused ? 'Syk / skadet' : d.kind === 'rest' ? 'Hvile' : d.beforeStart ? 'Før du startet' : 'Planlagt'}>
             <span className="dot" /><span className="tiny">{WEEKDAYS[d.weekday].slice(0, 2)}</span>
           </div>
         ))}

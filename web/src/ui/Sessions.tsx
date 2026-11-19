@@ -29,7 +29,8 @@ function summary(s: Session): string {
     return [r.reps && r.type !== 'tempo20' ? `${r.reps} drag` : '', r.minutes ? `${r.minutes} min` : '', r.km ? `${nb(r.km)} km` : '', r.avgHR ? `puls ${r.avgHR}` : '', `føltes ${r.rpe}/10`].filter(Boolean).join(' · ')
   }
   const sets = s.entries.reduce((n, e) => n + e.sets.length, 0)
-  return `${s.entries.length} øvelser · ${sets} sett`
+  const min = s.entries[0]?.durationMin
+  return `${s.entries.length} øvelser · ${sets} sett${min ? ` · ${min} min` : ''}`
 }
 
 export function SessionsCard() {
@@ -84,6 +85,7 @@ function EditorBody({ s, onClose }: { s: Session; onClose: () => void }) {
   const [reps, setReps] = useState(str(r?.reps))
   const [minutes, setMinutes] = useState(str(r?.minutes))
   const [date, setDate] = useState(s.date.slice(0, 10))
+  const [duration, setDuration] = useState(str(s.entries[0]?.durationMin))
   const [note, setNote] = useState(s.note ?? '')
   const [sets, setSets] = useState<Record<string, SetLog[]>>(() => Object.fromEntries(s.entries.map((e) => [e.id, e.sets.map((x) => ({ ...x }))])))
   const [confirm, setConfirm] = useState(false)
@@ -98,7 +100,7 @@ function EditorBody({ s, onClose }: { s: Session; onClose: () => void }) {
     const text = note.trim() || undefined
     const entries: WorkoutEntry[] = s.entries.map((e) => (e.run
       ? { ...e, date: d, note: text, run: { ...e.run, rpe, avgHR: num(avgHR), km: num(km), reps: num(reps), minutes: num(minutes) } }
-      : { ...e, date: d, note: text, sets: (sets[e.id] ?? []).filter((x) => x.reps > 0) }))
+      : { ...e, date: d, note: text, durationMin: num(duration), sets: (sets[e.id] ?? []).filter((x) => x.reps > 0) }))
       .filter((e) => e.run || e.sets.length)
     await editSession(s.entries.map((e) => e.id), entries)
     onClose()
@@ -135,6 +137,7 @@ function EditorBody({ s, onClose }: { s: Session; onClose: () => void }) {
           </div>
         ))
       )}
+      {!r && <label className="field"><span>Varighet (minutter)</span><input id="edit-duration" className="input" type="text" inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value)} /></label>}
       <label className="field"><span>Dato</span><input id="edit-date" className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></label>
       <label className="field"><span>Kommentar</span>
         <textarea id="edit-note" className="input" rows={3} value={note} onChange={(e) => setNote(e.target.value)}

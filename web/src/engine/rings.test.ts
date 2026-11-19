@@ -34,3 +34,14 @@ describe('ukeringer', () => {
     expect(r.rings[2].goal).toBeLessThan(5)
   })
 })
+
+describe('syk og står over', () => {
+  it('syke dager teller ikke mot ringene', () => {
+    const excused = new Set(['2026-11-18', '2026-11-19', '2026-11-20'])
+    const r = weekRings({ days, workouts: [lift(0), run(1)], checkins: [night(0), night(1), night(5)], weekStart: monday, now: new Date(at(7, 12)), excused })
+    expect(r.rings[0].goal).toBe(1); expect(r.rings[1].goal).toBe(1)
+    expect(r.rings[2].goal).toBe(Math.round(5 * 4 / 7))
+    expect(r.closed).toBe(true)
+    expect(r.days[2].excused).toBe(true)
+  })
+})

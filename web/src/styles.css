@@ -349,3 +349,8 @@ input[type="range"] { width: 100%; accent-color: var(--accent); }
 textarea.input { width: 100%; box-sizing: border-box; resize: vertical; font: inherit; min-height: 64px; }
 .session-row { align-items: center; text-align: left; gap: 8px; }
 .btn.bad { color: var(--bad); border-color: var(--bad); }
+.day-dot.excused .dot { border-style: dotted; opacity: 0.5; border-color: var(--muted); }
+.stopwatch { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.stopwatch.on { border-color: var(--good); }
+.stopwatch-time { font-family: var(--display); font-size: 2rem; font-weight: 700; line-height: 1; }
+.stopwatch .btn { min-width: 110px; }

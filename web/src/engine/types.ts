@@ -126,6 +126,10 @@ export interface Profile {
   kcalOffset?: number
   /** Velg manualer, kettlebell og strikk fremfor kabelmaskin. */
   preferFreeWeights?: boolean
+  /** Dager brukeren sto over, med grunn og kommentar. */
+  skips?: import('./absence').SkipEntry[]
+  /** Pågående eller nylig sykdom. */
+  sick?: import('./absence').SickPeriod
   /** Midlertidige plager (fra PT-chatten): programmet tilpasses til datoen. */
   tempLimitations?: TempLimitation[]
   /** Korreksjonsfaktorer for kameraskann, lært fra målebånd (f.eks. waist: 1.05). */
@@ -232,6 +236,8 @@ export interface WorkoutEntry {
   dayName: string
   exerciseId: string
   sets: SetLog[]
+  /** Varighet i minutter (stoppeklokka i økta). */
+  durationMin?: number
   /** Brukerens kommentar til økta (lik på alle øvelser i samme økt). Brukes når neste økt lages. */
   note?: string
   /** Løpeøkter: hvor tungt (1–10), puls, distanse, antall drag / minutter. */

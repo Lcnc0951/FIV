@@ -8,6 +8,8 @@ import { uid } from '../engine/types'
 import { effectiveMaxHR } from '../engine/composition'
 import { Card, Icon, Sheet, speak, Tag } from './kit'
 import { useApp } from './state'
+import { adjustForHealth, SKIP_LABEL } from '../engine/absence'
+import { SickCard, SkipButton, useHealth } from './Skip'
 import { adjustDay, nextRun, WARNING_SIGNS, type RunLog } from '../engine/daily'
 import { useCycle, useToday } from './Daily'
 
@@ -63,20 +65,25 @@ export function WeekStrip({ onPick }: { onPick?: (i: number) => void }) {
 }
 
 export function TodayCard({ start }: { start: (s: StartSession) => void }) {
-  const { profile } = useApp()
+  const { profile, saveProfile } = useApp()
+  const health = useHealth()
   const { days, done, strengthDay, today } = useWeek()
   const { readiness: r } = useToday()
   const cycle = useCycle()
   const runLogs = useRunLogs()
   const [shown, setShown] = useState(today)
   const isToday = shown === today
-  const adj = adjustDay(days[shown], isToday ? r?.level : undefined, cycle.deload && !cycle.finished)
+  const baseAdj = adjustDay(days[shown], isToday ? r?.level : undefined, cycle.deload && !cycle.finished)
+  const adj = isToday ? adjustForHealth(baseAdj, health.phase, health.lastSkip) : baseAdj
+  const sickToday = isToday && health.phase.phase === 'sick'
+  const skipped = isToday && !sickToday ? health.skippedToday : undefined
   const d = adj.day
   const s = strengthDay(d)
   const m = music(d)
   const runParams = d.run && d.kind !== 'rest' ? nextRun(d.run, runLogs) : undefined
   const tip = MORNING_TIPS[Math.floor(Date.now() / 86_400_000) % MORNING_TIPS.length]
   const setsShown = s ? s.exercises.reduce((n, p) => n + Math.max(1, Math.round(p.sets * adj.volumeFactor)), 0) : 0
+  if (sickToday) return <Card className="today"><SickCard /><WeekStrip onPick={setShown} /></Card>
   return (
     <Card className="today">
       <div className="row between">
@@ -101,6 +108,13 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
       )}
       {d.kind === 'strength' && s && <button className="btn primary big full" onClick={() => start({ kind: 'strength', day: s, volumeFactor: adj.volumeFactor })}><Icon name="play" /> Start styrkeøkta</button>}
       {d.run && d.kind !== 'rest' && <button className="btn primary big full" onClick={() => start({ kind: 'run', run: d.run!, reps: runParams?.reps, minutes: runParams?.minutes, scale: adj.runScale, note: runParams?.note })}><Icon name="timer" /> {d.run && RUN_INFO[d.run].hard ? 'Start intervalltimer' : 'Start løpetimer'}</button>}
+      {skipped && (
+        <div className="adjust small stack-s">
+          <span><Icon name="info" size={14} /> <strong>Du står over i dag:</strong> {SKIP_LABEL[skipped.reason].toLowerCase()}{skipped.note ? ` – ${skipped.note}` : ''}</span>
+          <button className="link small" onClick={() => saveProfile({ ...profile, skips: (profile.skips ?? []).filter((x) => x !== skipped) }, false)}>Angre, jeg trener likevel</button>
+        </div>
+      )}
+      {isToday && !skipped && d.kind !== 'rest' && !done.has(shown) && <SkipButton />}
       {isToday && d.kind !== 'rest' && <p className="hint">{tip}</p>}
       <WeekStrip onPick={setShown} />
     </Card>

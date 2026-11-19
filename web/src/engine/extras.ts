@@ -223,14 +223,16 @@ export type { BodyScan }
 export interface Ring { key: 'strength' | 'run' | 'recovery'; label: string; done: number; goal: number; expected: number; pct: number }
 export interface WeekRings {
   rings: Ring[]; closed: boolean; complete: boolean
+  /** Dager i uka brukeren var syk/skadet (teller ikke mot målene). */
+  excusedDays: number
   /** Per ukedag: planlagt type og om den er gjennomført. */
-  days: { weekday: number; kind: DayPlan['kind']; done: boolean; past: boolean; did?: 'strength' | 'run'; beforeStart: boolean }[]
+  days: { weekday: number; kind: DayPlan['kind']; done: boolean; past: boolean; did?: 'strength' | 'run'; beforeStart: boolean; excused: boolean }[]
 }
 
 /** Gode netter som trengs for å lukke restitusjonsringen. */
 export const RECOVERY_GOAL = 5
 
-export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; checkins: Checkin[]; weekStart: Date; now?: Date; since?: Date }): WeekRings {
+export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; checkins: Checkin[]; weekStart: Date; now?: Date; since?: Date; excused?: Set<string> }): WeekRings {
   const now = input.now ?? new Date()
   const start = mondayOf(input.weekStart)
   const end = new Date(start); end.setDate(end.getDate() + 7)
@@ -238,7 +240,9 @@ export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; ch
   const today = complete ? 7 : weekdayIndex(now)
   const sinceDay = input.since ? new Date(input.since.getFullYear(), input.since.getMonth(), input.since.getDate()) : undefined
   const dateOf = (wd: number) => { const x = new Date(start); x.setDate(x.getDate() + wd); return x }
-  const counts = (d: DayPlan) => !sinceDay || dateOf(d.weekday) >= sinceDay
+  const key = (x: Date) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
+  const excused = (d: DayPlan) => !!input.excused?.has(key(dateOf(d.weekday)))
+  const counts = (d: DayPlan) => (!sinceDay || dateOf(d.weekday) >= sinceDay) && !excused(d)
   const inWeek = (iso: string) => { const t = new Date(iso); return t >= start && t < end }
 
   const wk = input.workouts.filter((w) => inWeek(w.date))
@@ -246,7 +250,8 @@ export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; ch
   const runDays = new Set(wk.filter((w) => w.run).map((w) => weekdayIndex(new Date(w.date))))
   const goodNights = input.checkins.filter((c) => inWeek(c.date + 'T12:00') && (c.sleepScore != null ? sleepFromScore(c.sleepScore) : c.sleep) >= 3).length
   const firstDay = sinceDay && sinceDay > start ? weekdayIndex(sinceDay) : 0
-  const recoveryGoal = Math.max(1, Math.round(RECOVERY_GOAL * (7 - firstDay) / 7))
+  const excusedCount = [0, 1, 2, 3, 4, 5, 6].filter((wd) => wd >= firstDay && input.excused?.has(key(dateOf(wd)))).length
+  const recoveryGoal = Math.max(excusedCount ? 0 : 1, Math.round(RECOVERY_GOAL * (7 - firstDay - excusedCount) / 7))
 
   const plannedS = input.days.filter((d) => d.kind === 'strength' && counts(d))
   const plannedR = input.days.filter((d) => d.kind === 'run' && counts(d))
@@ -258,9 +263,9 @@ export function weekRings(input: { days: DayPlan[]; workouts: WorkoutEntry[]; ch
     ring('recovery', 'Restitusjon', goodNights, recoveryGoal, Math.round(recoveryGoal * Math.max(0, today - firstDay) / Math.max(1, 7 - firstDay))),
   ]
   const days = input.days.map((d) => ({
-    weekday: d.weekday, kind: d.kind, past: d.weekday < today, beforeStart: !counts(d),
+    weekday: d.weekday, kind: d.kind, past: d.weekday < today, beforeStart: !counts(d) && !excused(d), excused: excused(d),
     did: strengthDays.has(d.weekday) ? 'strength' as const : runDays.has(d.weekday) ? 'run' as const : undefined,
     done: d.kind === 'strength' ? strengthDays.has(d.weekday) : d.kind === 'run' ? runDays.has(d.weekday) : strengthDays.has(d.weekday) || runDays.has(d.weekday),
   }))
-  return { rings, closed: rings.every((r) => r.pct >= 1), complete, days }
+  return { rings, closed: rings.every((r) => r.pct >= 1), complete, days, excusedDays: excusedCount }
 }
