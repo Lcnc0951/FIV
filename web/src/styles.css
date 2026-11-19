@@ -354,3 +354,4 @@ textarea.input { width: 100%; box-sizing: border-box; resize: vertical; font: in
 .stopwatch.on { border-color: var(--good); }
 .stopwatch-time { font-family: var(--display); font-size: 2rem; font-weight: 700; line-height: 1; }
 .stopwatch .btn { min-width: 110px; }
+.guide { padding-left: 20px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }

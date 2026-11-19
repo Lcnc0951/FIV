@@ -4,6 +4,8 @@ import { uid, type BodyScan, type ScanMeasurements } from '../engine/types'
 import { analyzeFront, analyzeSide, combine, LM, type Detection, type ViewError, type ViewResult } from '../scan/measure'
 import { detectPose, loadImage, preloadPose } from '../scan/pose'
 import { lidarStatus, parseLidarJson, requestLidarScan } from '../scan/providers'
+import { MESH_ACCEPT } from '../scan/mesh/files'
+import { MeshImport } from './MeshImport'
 import { Card, dateNb, FindingRow, Icon, nb, speak, Tag } from './kit'
 import { applyCalibration, CAL_LABEL, learnCalibration, type CalKey } from '../engine/extras'
 
@@ -26,13 +28,18 @@ const POSTURE: [keyof ScanMeasurements, string, string][] = [
 
 export function Scan() {
   const { profile, data, saveProfile } = useApp()
-  const [mode, setMode] = useState<'start' | 'camera' | 'review'>('start')
+  const [mode, setMode] = useState<'start' | 'camera' | 'mesh' | 'review'>('start')
+  const [meshFile, setMeshFile] = useState<File | null>(null)
   const [weight, setWeight] = useState(profile.weightKg)
   const [result, setResult] = useState<{ m: ScanMeasurements; source: BodyScan['source']; raw?: ScanMeasurements } | null>(null)
   const [editing, setEditing] = useState<BodyScan | null>(null)
   useEffect(() => { preloadPose() }, [])
 
   if (mode === 'camera') return <CameraFlow onCancel={() => setMode('start')} onDone={(raw) => { setResult({ m: applyCalibration(raw, profile.calibration), raw, source: 'camera' }); setMode('review') }} />
+  if (mode === 'mesh' && meshFile) {
+    return <MeshImport file={meshFile} onCancel={() => { setMeshFile(null); setMode('start') }}
+      onUse={(m) => { setMeshFile(null); setResult({ m, source: 'lidar' }); setMode('review') }} />
+  }
   if (mode === 'review' && (result || editing)) {
     return <Review weight={weight} initial={editing?.measurements ?? result!.m} raw={editing?.raw ?? result?.raw} source={editing?.source ?? result!.source} existing={editing ?? undefined}
       onDone={() => { setMode('start'); setResult(null); setEditing(null) }} />
@@ -61,6 +68,7 @@ export function Scan() {
           <p className="small muted">Kameraskann rettes automatisk: {calText(profile.calibration!)}.</p>
         </Card>
       )}
+      <MeshCard onFile={(f) => { setMeshFile(f); setMode('mesh') }} />
       <LidarCard weight={weight} onResult={(m) => { setResult({ m, source: 'lidar' }); setMode('review') }} enabled={profile.scanMethod === 'lidar'} />
       {data.scans.length > 0 && (
         <Card>
@@ -76,6 +84,30 @@ export function Scan() {
         </Card>
       )}
     </div>
+  )
+}
+
+/** 3D-skann fra en gratis LiDAR-app (Scaniverse, 3d Scanner App, Polycam) eller FIV LiDAR. */
+function MeshCard({ onFile }: { onFile: (f: File) => void }) {
+  const input = useRef<HTMLInputElement>(null)
+  const [open, setOpen] = useState(false)
+  return (
+    <Card>
+      <div className="row gap"><Icon name="lidar" size={26} /><div><strong>3D-skann med LiDAR</strong> <Tag tone="good">mest nøyaktig</Tag>
+        <p className="muted small">Skann kroppen med en gratis LiDAR-app på iPhone Pro, for eksempel Scaniverse, og importer 3D-filen. Omkretsene måles rett på modellen.</p></div></div>
+      <button className="btn primary full" onClick={() => input.current?.click()}><Icon name="upload" /> Importer 3D-fil (PLY, OBJ, GLB, STL)</button>
+      <input ref={input} type="file" accept={MESH_ACCEPT} hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onFile(f) }} />
+      <button className="link small" onClick={() => setOpen(!open)}>{open ? 'Skjul veiledning' : 'Slik skanner du'}</button>
+      {open && (
+        <ol className="small guide">
+          <li>Last ned <strong>Scaniverse</strong> (gratis) fra App Store. Velg LiDAR-modus og en modus som lager 3D-modell (mesh), ikke «splat».</li>
+          <li>Tettsittende klær, godt lys. Stå helt stille i A-stilling: armene litt ut, føttene litt fra hverandre.</li>
+          <li><strong>Noen andre</strong> går sakte én hel runde rundt deg med telefonen, 1–1,5 m unna. Ta med føttene og toppen av hodet.</li>
+          <li>Beskjær bort det meste av rommet rundt deg i appen.</li>
+          <li>Del eller eksporter som <strong>PLY</strong> eller <strong>OBJ</strong>, velg «Lagre i Filer», og importer filen her.</li>
+        </ol>
+      )}
+    </Card>
   )
 }
 

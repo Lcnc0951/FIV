@@ -33,6 +33,16 @@ open FIV.xcodeproj
 2. Koble til iPhonen, velg den som mål og trykk ▶︎.
 3. Kjør testene med ⌘U (PT-motoren er ren Swift og testes uten kamera).
 
+## 3D-skann fra gratis LiDAR-apper (uten egen app)
+
+Nettappen kan importere en 3D-modell av kroppen og måle omkretsene direkte på den (Skann → *3D-skann med LiDAR*). Da trengs ingen egen app:
+
+1. Last ned **Scaniverse** (gratis) på en iPhone Pro. Velg LiDAR-modus og en modus som lager mesh.
+2. Stå stille i A-stilling mens noen går en runde rundt deg. Beskjær bort rommet.
+3. Eksporter som PLY eller OBJ til Filer, og importer filen i FIV.
+
+Støttede formater: PLY (ascii/binær), OBJ, GLB, STL og ZIP med en av disse. USDZ kan ikke leses i nettleseren. Målingen tar 1–2 sekunder for et skann med rundt én million trekanter.
+
 ## FIV LiDAR – egen app for LiDAR-opptak
 
 `FIVLidar/` er en egen, enklere iPhone-app (target `FIVLidar`, vises som **FIV LiDAR**) som bruker LiDAR-sensoren og lagrer alt som vanlige filer. Den gjenbruker skannemotoren fra FIV (`FIV/Scanning`), så kroppsmålene blir de samme.
