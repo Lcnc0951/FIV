@@ -6,6 +6,7 @@ import { cycleInfo, readiness, todayKey, weightTrend } from '../engine/daily'
 import { exercise } from '../engine/library'
 import { GOAL_INFO, LIMITATION_LABEL, PHYSIQUE_INFO, POSTURE_GOAL_LABEL } from '../engine/types'
 import { planWeek, RUN_INFO, WEEKDAYS } from '../engine/week'
+import { planMobility } from '../engine/mobility'
 import { AREA_TEXT, detectPain, PAIN_RULES } from '../engine/pain'
 import type { Limitation } from '../engine/types'
 import { Card, Icon } from './kit'
@@ -53,7 +54,8 @@ function useContextText(): string {
     `Dagsform i dag: ${r ? `${r.level} (${r.reasons.join(', ') || 'ok'})` : 'ikke registrert'}. Vekt 7-dagers snitt: ${wt.avg7?.toFixed(1) ?? '–'} kg, endring siste uke: ${wt.weeklyChangePct?.toFixed(2) ?? '–'} %.`,
     `Styrkeøktene nå: ${program?.days.map((d) => `${d.name}: ${d.exercises.map((x) => exercise(x.exerciseId)?.name ?? x.exerciseId).join(', ')}`).join(' | ') ?? 'ingen'}.`,
     `Helse: ${profile.sick && !profile.sick.recovered ? `SYK siden ${profile.sick.since.slice(0, 10)}${profile.sick.note ? ` («${profile.sick.note}»)` : ''}` : profile.sick?.recovered ? `var syk ${profile.sick.since.slice(0, 10)}–${profile.sick.recovered}, trapper opp igjen` : 'frisk'}. Sto over siste 14 dager: ${(profile.skips ?? []).filter((s) => Date.now() - new Date(s.date).getTime() < 14 * 864e5).map((s) => `${s.date} ${s.reason}${s.note ? ` («${s.note}»)` : ''}`).join('; ') || 'ingen'}.`,
-    `Midlertidig tilpasset for plager: ${pain.areas.map((a) => `${AREA_TEXT[a]} til ${pain.until[a].slice(0, 10)}`).join(', ') || 'nei'}.`,
+    `Plager og bevegelighet: ${profile.mobility && !profile.mobility.resolved ? `«${profile.mobility.text}», smerte ${profile.mobility.pain}/10, nivå ${profile.mobility.level}, områder ${profile.mobility.regions.join(', ')}, begrensninger ${profile.mobility.limits.join(', ') || 'ingen'}. Daglig rutine: ${planMobility(profile.mobility).daily.map((d) => d.name).join(', ')}` : 'ingen registrert'}.`,
+    `Midlertidig tilpasset for plager: ${pain.areas.map((a) => `${AREA_TEXT[a]}${pain.until[a] ? ` til ${pain.until[a].slice(0, 10)}` : ' (fra plager/bevegelighet)'}`).join(', ') || 'nei'}.`,
     `Siste økter:\n${recent.join('\n') || 'ingen logget ennå'}`,
   ].join('\n')
 }

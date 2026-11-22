@@ -354,3 +354,9 @@ textarea.input { width: 100%; box-sizing: border-box; resize: vertical; font: in
 .stopwatch.on { border-color: var(--good); }
 .stopwatch-time { font-family: var(--display); font-size: 2rem; font-weight: 700; line-height: 1; }
 .stopwatch .btn { min-width: 110px; }
+.chips button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.log-today { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.pain-trend { display: flex; align-items: flex-end; gap: 4px; height: 64px; margin: 10px 0 4px; }
+.pain-bar { flex: 1; background: var(--accent-soft); border-radius: 6px 6px 2px 2px; display: flex; justify-content: center; align-items: flex-start; color: var(--fg); }
+.segmented[role=tablist] button { flex: 1 1 auto; min-width: 0; padding-left: 6px; padding-right: 6px; white-space: nowrap; }
+@media (max-width: 420px) { .segmented[role=tablist] button { font-size: 0.86rem; } }

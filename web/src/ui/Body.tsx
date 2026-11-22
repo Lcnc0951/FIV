@@ -1,3 +1,4 @@
+import { MobilityView } from './Mobility'
 import { useState } from 'react'
 import { analyzeMuscles, planPosture, type PostureDrill, type RegionScore } from '../engine/analyzer'
 import { analyzeFat, DISTRIBUTION_LABEL, estimated1RM, FAT_CATEGORY_LABEL, planFatLoss } from '../engine/coach'
@@ -19,7 +20,7 @@ export function FatScale({ position }: { position: number }) {
 
 export function Body({ initial = 'fat' }: { initial?: string }) {
   const [tab, setTab] = useState(initial)
-  const tabs = [['fat', 'Fett'], ['muscle', 'Muskler'], ['posture', 'Holdning'], ['progress', 'Fremgang']]
+  const tabs = [['fat', 'Fett'], ['muscle', 'Muskler'], ['posture', 'Holdning'], ['plager', 'Plager'], ['progress', 'Fremgang']]
   return (
     <div className="stack">
       <header className="page-head"><h1>Kroppen din</h1></header>
@@ -29,6 +30,7 @@ export function Body({ initial = 'fat' }: { initial?: string }) {
       {tab === 'fat' && <Fat />}
       {tab === 'muscle' && <Muscles />}
       {tab === 'posture' && <Posture />}
+      {tab === 'plager' && <MobilityView />}
       {tab === 'progress' && <Progress />}
     </div>
   )

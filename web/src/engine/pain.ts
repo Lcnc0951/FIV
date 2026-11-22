@@ -1,5 +1,5 @@
 // Midlertidige plager: gjenkjenn smertespørsmål, tilpass programmet i en periode og gi opptrening.
-import type { TrainingProgram } from './generator'
+import type { Prescription, TrainingProgram } from './generator'
 import { exercise } from './library'
 import type { Limitation, MovementPattern } from './types'
 
@@ -28,7 +28,7 @@ interface Rule { patterns: MovementPattern[]; ids: string[]; careful: MovementPa
 export const PAIN_RULES: Record<Limitation, Rule> = {
   shoulder: {
     patterns: ['verticalPush', 'lateralRaise', 'chestFly', 'verticalPull'],
-    ids: ['bench_bb', 'dips', 'dips_bench', 'face_pull', 'band_face_pull', 'ytw', 'hanging_leg_raise', 'overhead_cable_ext', 'db_overhead_ext', 'pullup', 'chinup'],
+    ids: ['bench_bb', 'dips', 'dips_bench', 'face_pull', 'hanging_leg_raise', 'overhead_cable_ext', 'db_overhead_ext', 'pullup', 'chinup'],
     careful: ['horizontalPush', 'horizontalPull', 'rearDelt', 'elbowFlexion', 'elbowExtension'],
     rehab: [
       'Isometrisk utadrotasjon: albuen inntil kroppen, press håndbaken mot dørkarmen med 30–50 % kraft. 5 × 30 sek, daglig.',
@@ -71,20 +71,46 @@ export function painBlocked(exerciseId: string, areas: Limitation[]): boolean {
   return areas.some((a) => PAIN_RULES[a].ids.includes(exerciseId) || (!!e && PAIN_RULES[a].patterns.includes(e.pattern)))
 }
 
-/** Tar ut øvelser som irriterer området og gjør resten lettere. Endrer ikke det lagrede programmet. */
-export function applyPain(program: TrainingProgram | undefined, areas: Limitation[]): { program?: TrainingProgram; removed: string[] } {
+// Skånsomme erstatninger (hvis utstyret finnes) og ekstra øvelser for baksiden av skuldrene
+const SUBSTITUTE: Record<string, { id: string; note: string }[]> = {
+  bench_bb: [
+    { id: 'bench_db', note: 'Skånsom benk: manualer med nøytralt grep, senk bare til albuene er i høyde med kroppen (eller gulvpress).' },
+    { id: 'pushup', note: 'Skånsom variant: hendene på en benk eller bordkant, kort bevegelse.' },
+  ],
+  dips: [{ id: 'pushup', note: 'Erstatter dips: armhevinger med hendene høyt, albuene inntil kroppen.' }],
+}
+const PREHAB: Partial<Record<Limitation, string[]>> = { shoulder: ['band_pull_apart', 'reverse_fly', 'band_face_pull', 'chest_supported_row'] }
+const BENCH_NOTE = 'Skånsom benk: nøytralt grep (håndflatene mot hverandre), senk bare til albuene er i høyde med kroppen. Gulvpress er også et godt valg.'
+
+/** Tar ut øvelser som irriterer området, bytter til skånsomme varianter og gjør resten lettere. Endrer ikke det lagrede programmet. */
+export function applyPain(program: TrainingProgram | undefined, areas: Limitation[], available?: (exerciseId: string) => boolean): { program?: TrainingProgram; removed: string[] } {
   if (!program || !areas.length) return { program, removed: [] }
   const removed = new Set<string>()
+  const ok = (id: string) => (available ? available(id) : true) && !painBlocked(id, areas)
   const days = program.days.map((d) => {
-    const keep = d.exercises.filter((x) => {
-      if (painBlocked(x.exerciseId, areas)) { removed.add(x.exerciseId); return false }
-      return true
-    }).map((x) => {
+    const out: Prescription[] = []
+    for (const x of d.exercises) {
+      if (painBlocked(x.exerciseId, areas)) {
+        removed.add(x.exerciseId)
+        const sub = (SUBSTITUTE[x.exerciseId] ?? []).find((s) => ok(s.id) && !d.exercises.some((y) => y.exerciseId === s.id) && !out.some((y) => y.exerciseId === s.id))
+        if (sub) out.push({ ...x, exerciseId: sub.id, rir: Math.min(4, x.rir + 1), note: sub.note })
+        continue
+      }
       const e = exercise(x.exerciseId)
       const careful = e && areas.some((a) => PAIN_RULES[a].careful.includes(e.pattern))
-      return careful ? { ...x, rir: Math.min(4, x.rir + 1), note: `Lettere vekt denne uka. Hold smerten på 3/10 eller lavere. ${x.note ?? ''}`.trim() } : x
-    })
-    const changed = keep.length !== d.exercises.length
+      const bench = areas.includes('shoulder') && e?.pattern === 'horizontalPush' && x.exerciseId !== 'pushup'
+      out.push(careful ? { ...x, rir: Math.min(4, x.rir + 1), note: `${bench ? BENCH_NOTE : 'Lettere vekt.'} Hold smerten på 3/10 eller lavere. ${x.note ?? ''}`.trim() } : x)
+    }
+    // Baksiden av skuldrene: legg til én lett øvelse på dager der noe ble tatt ut
+    const changed = out.length !== d.exercises.length || out.some((x, i) => x.exerciseId !== d.exercises[i]?.exerciseId)
+    for (const a of areas) {
+      if (!changed) break
+      const pre = (PREHAB[a] ?? []).find((id) => ok(id) && !out.some((y) => y.exerciseId === id || exercise(y.exerciseId)?.pattern === 'rearDelt'))
+      if (pre && !out.some((y) => exercise(y.exerciseId)?.pattern === 'rearDelt')) {
+        out.push({ id: `${d.id}-prehab-${pre}`, exerciseId: pre, sets: 2, repsMin: 15, repsMax: 20, rir: 3, restSeconds: 45, note: 'Lett og smertefritt: styrker baksiden av skuldrene og øvre rygg.' })
+      }
+    }
+    const keep = out
     return { ...d, exercises: keep, focus: changed ? `${d.focus} · tilpasset ${areas.map((a) => AREA_TEXT[a]).join('/')}` : d.focus }
   })
   return { program: { ...program, days }, removed: [...removed] }

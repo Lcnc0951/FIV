@@ -6,6 +6,8 @@ import { analyzeBody, planPosture } from '../engine/analyzer'
 import { generateProgram, prescription, type TrainingProgram } from '../engine/generator'
 import { exercise } from '../engine/library'
 import { activeTemp, applyPain } from '../engine/pain'
+import { planMobility, strengthAreas } from '../engine/mobility'
+import { isAvailable } from '../engine/library'
 import type { BodyScan, Limitation, Profile, ProfileData, TrainingLocation, WorkoutEntry } from '../engine/types'
 
 export function profileData(p: Profile, loc?: TrainingLocation): ProfileData {
@@ -179,11 +181,18 @@ export function AppProvider({ initial, backend, children }: { initial: AppData &
     const s = sortedScans(data.scans)
     const loc = activeLocation(data.profile)
     const temp = activeTemp(data.profile.tempLimitations)
-    const areas = temp.map((t) => t.area)
-    const adjusted = applyPain(data.programs[loc.id], areas)
+    const mob = data.profile.mobility
+    const areas = [...new Set([...temp.map((t) => t.area), ...strengthAreas(mob)])]
+    const items = new Set(loc.equipment)
+    const adjusted = applyPain(data.programs[loc.id], areas, (id) => { const e = exercise(id); return !!e && isAvailable(e, items) })
+    // Mobilitetsrutinen legges først i oppvarmingen
+    if (adjusted.program && mob && !mob.resolved) {
+      const warm = planMobility(mob).warmup.map((d) => `Mobilitet: ${d.name} (${d.dose})`)
+      adjusted.program = { ...adjusted.program, warmup: [...warm, ...adjusted.program.warmup] }
+    }
     return {
       data, backend, profile: data.profile, pd: profileData(data.profile), latest: s[0], program: adjusted.program,
-      pain: { areas, until: Object.fromEntries(temp.map((t) => [t.area, t.until])), removed: adjusted.removed },
+      pain: { areas, until: Object.fromEntries([...areas.map((a) => [a, '']), ...temp.map((t) => [t.area, t.until])]), removed: adjusted.removed },
       saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation, editSession,
     }
   }, [data, backend, saveProfile, addScan, updateScan, deleteScan, regenerate, swap, logWorkout, saveCheckin, saveWeight, newCycle, setTempLimitation, clearTempLimitation, editSession])

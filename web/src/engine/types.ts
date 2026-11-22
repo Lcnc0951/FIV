@@ -128,6 +128,9 @@ export interface Profile {
   preferFreeWeights?: boolean
   /** Dager brukeren sto over, med grunn og kommentar. */
   skips?: import('./absence').SkipEntry[]
+  /** Plager og bevegelighet beskrevet av brukeren, med daglig rutine og nivå. */
+  mobility?: import('./mobility').MobilityProfile
+  mobilityLog?: import('./mobility').MobilityLog[]
   /** Pågående eller nylig sykdom. */
   sick?: import('./absence').SickPeriod
   /** Midlertidige plager (fra PT-chatten): programmet tilpasses til datoen. */

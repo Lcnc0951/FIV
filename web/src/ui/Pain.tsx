@@ -17,19 +17,21 @@ export function PainBanner({ compact = false }: { compact?: boolean }) {
         <div key={a} className="stack-s">
           <div className="row between wrap gap-s">
             <h3><Icon name="info" size={16} /> Tilpasset for {AREA_TEXT[a]}</h3>
-            <span className="muted small">til {dateText(pain.until[a])}</span>
+            <span className="muted small">{pain.until[a] ? `til ${dateText(pain.until[a])}` : 'til plagene er borte'}</span>
           </div>
-          {!compact && (
+          {!compact && !!pain.until[a] && (
             <>
               <p className="small"><strong>Daglig opptrening:</strong></p>
               <ul className="small">{PAIN_RULES[a].rehab.map((r) => <li key={r}>{r}</li>)}</ul>
               {PAIN_RULES[a].run && <p className="small">{PAIN_RULES[a].run}</p>}
             </>
           )}
-          <div className="row gap-s wrap">
-            <button className="btn small" onClick={() => clearTempLimitation(a)}>Bedre nå, vanlig program</button>
-            <button className="btn small ghost" onClick={() => setTempLimitation(a, 7)}>Forleng 7 dager</button>
-          </div>
+          {pain.until[a] ? (
+            <div className="row gap-s wrap">
+              <button className="btn small" onClick={() => clearTempLimitation(a)}>Bedre nå, vanlig program</button>
+              <button className="btn small ghost" onClick={() => setTempLimitation(a, 7)}>Forleng 7 dager</button>
+            </div>
+          ) : <p className="muted small">Styres fra Kropp → Plager. Der finner du også den daglige mobilitetsrutinen.</p>}
         </div>
       ))}
       {removed.length > 0 && <p className="muted small">Tatt ut midlertidig: {removed.join(', ')}.</p>}
