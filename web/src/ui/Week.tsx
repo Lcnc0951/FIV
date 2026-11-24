@@ -317,7 +317,13 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
         )}
       <Card>
         <p className="small"><strong>Dagens økt:</strong> {hardTotal > 0 ? `${segs.filter((x) => x.intensity === 'hard').length} drag · ` : ''}{Math.round(total / 60)} min totalt{(session.scale ?? 1) < 1 ? ' (redusert etter dagsform/lett uke)' : ''}.</p>
-        <p className="small muted">{RUN_INFO[run].summary}</p>
+        <p className="small muted">{(() => {
+          const t = (x: number) => (x % 60 ? `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')} min` : `${x / 60} min`).replace(/^0:(\d\d) min$/, '$1 sek')
+          const parts = [setup.warmupSec ? `${t(setup.warmupSec)} oppvarming` : 'uten oppvarming',
+            setup.reps > 1 ? `${setup.reps} × ${t(setup.workSec)} ${RUN_INFO[run].hard ? 'hardt' : ''}${setup.restSec ? ` med ${t(setup.restSec)} ${setup.restSec < 60 ? 'pause' : 'rolig jogg'}` : ''}` : `${t(setup.workSec)} ${run === 'tempo20' ? 'terskel' : 'løp'}`,
+            setup.cooldownSec ? `${t(setup.cooldownSec)} ned` : '']
+          return parts.filter(Boolean).join(' · ').replace(/ {2,}/g, ' ')
+        })()}</p>
         <p className="small muted">{RUN_INFO[run].why}</p>
         {session.note && <p className="small"><strong>Progresjon:</strong> {session.note}</p>}
         <p className="small muted">Telefonen sier fra ved hvert skifte, så du kan ha den i lomma. Har du pulsklokke: harde drag 85–95 % av makspuls.</p>
