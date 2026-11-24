@@ -16,7 +16,7 @@ import { useCycle, useToday } from './Daily'
 
 export type StartSession =
   | { kind: 'strength'; day: WorkoutDay; volumeFactor?: number }
-  | { kind: 'run'; run: RunType; reps?: number; minutes?: number; scale?: number; note?: string }
+  | { kind: 'run'; run: RunType; reps?: number; minutes?: number; scale?: number; note?: string; skipWarmup?: boolean }
 
 /** Logg over løpeøkter (for progresjon). */
 export function useRunLogs(): RunLog[] {
@@ -108,7 +108,20 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
         </div>
       )}
       {d.kind === 'strength' && s && <button className="btn primary big full" onClick={() => start({ kind: 'strength', day: s, volumeFactor: adj.volumeFactor })}><Icon name="play" /> Start styrkeøkta</button>}
-      {d.run && d.kind !== 'rest' && <button className="btn primary big full" onClick={() => start({ kind: 'run', run: d.run!, reps: runParams?.reps, minutes: runParams?.minutes, scale: adj.runScale, note: runParams?.note })}><Icon name="timer" /> {d.run && RUN_INFO[d.run].hard ? 'Start intervalltimer' : 'Start løpetimer'}</button>}
+      {d.run && d.kind !== 'rest' && (() => {
+        const go = (skipWarmup = false) => start({ kind: 'run', run: d.run!, reps: runParams?.reps, minutes: runParams?.minutes, scale: adj.runScale, note: runParams?.note, skipWarmup })
+        return (
+          <>
+            <button className="btn primary big full" onClick={() => go()}><Icon name="timer" /> {RUN_INFO[d.run!].hard ? 'Start intervalltimer' : 'Start løpetimer'}</button>
+            {d.run !== 'easy' && (
+              <div className="grid2">
+                <button className="btn" onClick={() => go(true)}>⏭ Start uten oppvarming</button>
+                <button className="btn" onClick={() => go()}>⚙︎ Tilpass tider før start</button>
+              </div>
+            )}
+          </>
+        )
+      })()}
       {skipped && (
         <div className="adjust small stack-s">
           <span><Icon name="info" size={14} /> <strong>Du står over i dag:</strong> {SKIP_LABEL[skipped.reason].toLowerCase()}{skipped.note ? ` – ${skipped.note}` : ''}</span>
@@ -181,7 +194,7 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
   // PT-ens forslag (progresjon + dagsform), med brukerens egne tider lagt over
   const suggested = useMemo(() => setupFromSegments(runSegments(run, profile.sessionMinutes, { reps: session.reps, minutes: session.minutes }, session.scale ?? 1)), [run, profile.sessionMinutes, session])
   const saved = profile.runSetups?.[run]
-  const [setup, setSetup] = useState<IntervalSetup>(() => mergeSetup(suggested, saved))
+  const [setup, setSetup] = useState<IntervalSetup>(() => { const s = mergeSetup(suggested, saved); return session.skipWarmup ? { ...s, warmupSec: 0 } : s })
   const segs = useMemo(() => segmentsFromSetup(run, setup), [run, setup])
   const [rpe, setRpe] = useState(7)
   const [avgHR, setAvgHR] = useState('')
