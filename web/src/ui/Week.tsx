@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { totalSets, type WorkoutDay } from '../engine/generator'
 import {
-  MORNING_TIPS, motivation, music, planWeek, RUN_INFO, runSegments, totalSeconds, weekdayIndex, weekWarnings,
-  WEEKDAYS, WEEKDAYS_SHORT, type DayKind, type DayPlan, type RunType, type Segment,
+  MORNING_TIPS, motivation, music, planWeek, RUN_INFO, runSegments, totalSeconds, setupFromSegments, segmentsFromSetup, mergeSetup, weekdayIndex, weekWarnings,
+  WEEKDAYS, WEEKDAYS_SHORT, type DayKind, type DayPlan, type RunType, type Segment, type IntervalSetup,
 } from '../engine/week'
 import { uid } from '../engine/types'
 import { effectiveMaxHR } from '../engine/composition'
 import { Card, Icon, Sheet, speak, Tag } from './kit'
 import { useApp } from './state'
 import { adjustForHealth, SKIP_LABEL } from '../engine/absence'
+import { IntervalEditor } from './IntervalEditor'
 import { SickCard, SkipButton, useHealth } from './Skip'
 import { adjustDay, nextRun, WARNING_SIGNS, type RunLog } from '../engine/daily'
 import { useCycle, useToday } from './Daily'
@@ -176,8 +177,12 @@ export function WeekEditor() {
 /** Intervalltimer med tale og pip — løp med telefonen i lomma. */
 export function RunTimer({ session, onClose }: { session: Extract<StartSession, { kind: 'run' }>; onClose: () => void }) {
   const run = session.run
-  const { profile, logWorkout } = useApp()
-  const segs = useMemo(() => runSegments(run, profile.sessionMinutes, { reps: session.reps, minutes: session.minutes }, session.scale ?? 1), [run, profile.sessionMinutes, session])
+  const { profile, logWorkout, saveProfile } = useApp()
+  // PT-ens forslag (progresjon + dagsform), med brukerens egne tider lagt over
+  const suggested = useMemo(() => setupFromSegments(runSegments(run, profile.sessionMinutes, { reps: session.reps, minutes: session.minutes }, session.scale ?? 1)), [run, profile.sessionMinutes, session])
+  const saved = profile.runSetups?.[run]
+  const [setup, setSetup] = useState<IntervalSetup>(() => mergeSetup(suggested, saved))
+  const segs = useMemo(() => segmentsFromSetup(run, setup), [run, setup])
   const [rpe, setRpe] = useState(7)
   const [avgHR, setAvgHR] = useState('')
   const [km, setKm] = useState('')
@@ -229,6 +234,12 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
   }, [idx, left, running, finished]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggle = async () => {
+    if (!running && elapsed === 0) {
+      // Husk egne tider (ikke antall drag, og ikke «har varmet opp» for én dag)
+      const keep: Partial<IntervalSetup> = { workSec: setup.workSec, restSec: setup.restSec, cooldownSec: setup.cooldownSec, ...(setup.warmupSec > 0 ? { warmupSec: setup.warmupSec } : saved?.warmupSec ? { warmupSec: saved.warmupSec } : {}) }
+      const same = (Object.keys(keep) as (keyof IntervalSetup)[]).every((k) => keep[k] === suggested[k])
+      if (!same || saved) saveProfile({ ...profile, runSetups: { ...profile.runSetups, [run]: same ? undefined : keep } }, false)
+    }
     if (running) { base.current = elapsed; setRunning(false); wake.current?.release().catch(() => undefined); return }
     startedAt.current = Date.now(); base.current = elapsed; setRunning(true)
     try { wake.current = await (navigator as unknown as { wakeLock: { request: (t: string) => Promise<{ release: () => Promise<void> }> } }).wakeLock.request('screen') } catch { /* valgfritt */ }
@@ -249,6 +260,12 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
   const hr = effectiveMaxHR(new Date().getFullYear() - profile.birthYear, profile.watch?.maxHR)
   const zone = (i: Segment['intensity']) => i === 'hard' ? `${Math.floor(hr * 0.85)}–${Math.floor(hr * 0.95)}` : i === 'moderat' ? `${Math.floor(hr * 0.8)}–${Math.floor(hr * 0.87)}` : `${Math.floor(hr * 0.6)}–${Math.floor(hr * 0.72)}`
   const hardDone = segs.slice(0, idx).filter((s) => s.intensity === 'hard').length
+  // Hopp til neste del (f.eks. ferdig oppvarmet)
+  const skip = () => {
+    const to = acc + seg.seconds
+    base.current = to; startedAt.current = Date.now(); setElapsed(to)
+  }
+  const notStarted = elapsed === 0 && !running
   const hardTotal = segs.filter((s) => s.intensity === 'hard').length
   return (
     <div className="stack">
@@ -264,7 +281,9 @@ export function RunTimer({ session, onClose }: { session: Extract<StartSession, 
       {!showLog
         ? <>
             <button className="btn primary big full" onClick={toggle}>{running ? 'Pause' : elapsed > 0 ? 'Fortsett' : 'Start'}</button>
+            {!notStarted && idx + 1 < segs.length && <button className="btn full" onClick={skip}>{seg.label === 'Oppvarming' ? 'Ferdig oppvarmet, start dragene ⏭' : `Hopp til neste: ${segs[idx + 1].label} ⏭`}</button>}
             {elapsed >= 60 && <button className="btn ghost full" onClick={() => { if (running) toggle(); setStopped(true) }}>Avslutt tidlig og logg økta</button>}
+            {notStarted && <IntervalEditor run={run} setup={setup} suggested={suggested} onChange={setSetup} />}
           </>
         : (
           <div ref={doneRef}><Card>

@@ -43,3 +43,24 @@ describe('ukeplan', () => {
     for (const d of days) if (d.kind !== 'rest') expect(music(d)?.playlists.length).toBeGreaterThan(0)
   })
 })
+
+import { mergeSetup, segmentsFromSetup, setupFromSegments } from './week'
+describe('egendefinert intervall', () => {
+  it('leser og bygger 4×4 likt', () => {
+    const segs = runSegments('intervals4x4', 40)
+    const s = setupFromSegments(segs)
+    expect(s).toEqual({ warmupSec: 600, reps: 4, workSec: 240, restSec: 180, cooldownSec: 300 })
+    expect(segmentsFromSetup('intervals4x4', s)).toEqual(segs)
+  })
+  it('hopp over oppvarming og egne tider', () => {
+    const s = { ...setupFromSegments(runSegments('intervals4x4', 40)), warmupSec: 0, restSec: 120 }
+    const segs = segmentsFromSetup('intervals4x4', s)
+    expect(segs[0].label).toBe('Drag 1 av 4')
+    expect(totalSeconds(segs)).toBe(4 * 240 + 3 * 120 + 300)
+  })
+  it('lagrede tider beholder progresjonens antall drag', () => {
+    const sug = setupFromSegments(runSegments('short45_20', 40, { reps: 13 }))
+    expect(mergeSetup(sug, { reps: 10, restSec: 15 })).toMatchObject({ reps: 13, restSec: 15, workSec: 45 })
+    expect(setupFromSegments(runSegments('tempo20', 40, { minutes: 25 }))).toMatchObject({ reps: 1, workSec: 1500, warmupSec: 300 })
+  })
+})

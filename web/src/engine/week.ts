@@ -70,6 +70,44 @@ export function runSegments(type: RunType, totalMinutes = 40, params?: { reps?: 
 
 export const totalSeconds = (segs: Segment[]) => segs.reduce((a, b) => a + b.seconds, 0)
 
+// ---- Egendefinert intervalløkt ----
+/** Brukerens oppsett av økta: varighet per del i sekunder. Hard-delene gjentas `reps` ganger med `restSec` imellom. */
+export interface IntervalSetup { warmupSec: number; reps: number; workSec: number; restSec: number; cooldownSec: number }
+
+/** Leser oppsettet ut av PT-ens forslag (inkludert progresjon og dagsform). */
+export function setupFromSegments(segs: Segment[]): IntervalSetup {
+  const first = segs[0], last = segs[segs.length - 1]
+  const work = segs.filter((x) => x.intensity === 'hard' || x.intensity === 'moderat')
+  const rest = segs.find((x) => x.intensity === 'pause')
+  const hasWarm = segs.length > 1 && first.label === 'Oppvarming'
+  const hasCool = segs.length > 1 && last.label === 'Nedjogg'
+  if (!work.length) return { warmupSec: 0, reps: 1, workSec: first.seconds, restSec: 0, cooldownSec: 0 }
+  return { warmupSec: hasWarm ? first.seconds : 0, reps: work.length, workSec: work[0].seconds, restSec: rest?.seconds ?? 0, cooldownSec: hasCool ? last.seconds : 0 }
+}
+
+/** Bygger segmentene fra brukerens oppsett. */
+export function segmentsFromSetup(type: RunType, s: IntervalSetup): Segment[] {
+  const out: Segment[] = []
+  if (s.warmupSec > 0) out.push({ label: 'Oppvarming', seconds: s.warmupSec, intensity: 'rolig' })
+  const intensity: Segment['intensity'] = type === 'tempo20' ? 'moderat' : type === 'easy' ? 'rolig' : 'hard'
+  const reps = Math.max(1, s.reps)
+  for (let i = 1; i <= reps; i++) {
+    out.push({ label: reps === 1 ? (type === 'tempo20' ? 'Terskel' : type === 'easy' ? 'Rolig løp' : 'Drag') : `Drag ${i} av ${reps}`, seconds: Math.max(5, s.workSec), intensity })
+    if (i < reps && s.restSec > 0) out.push({ label: s.restSec < 60 ? 'Pause' : 'Rolig jogg', seconds: s.restSec, intensity: 'pause' })
+  }
+  if (s.cooldownSec > 0) out.push({ label: 'Nedjogg', seconds: s.cooldownSec, intensity: 'rolig' })
+  return out
+}
+
+/** Brukerens lagrede varigheter (ikke antall drag, som styres av progresjonen) legges over PT-ens forslag. */
+export function mergeSetup(suggested: IntervalSetup, saved?: Partial<IntervalSetup>): IntervalSetup {
+  if (!saved) return suggested
+  const { reps: _ignore, ...rest } = saved
+  void _ignore
+  return { ...suggested, ...rest }
+}
+
+
 export interface DayPlan {
   weekday: number // 0 = mandag
   kind: DayKind
