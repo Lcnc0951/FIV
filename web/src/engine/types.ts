@@ -126,6 +126,8 @@ export interface Profile {
   kcalOffset?: number
   /** Velg manualer, kettlebell og strikk fremfor kabelmaskin. */
   preferFreeWeights?: boolean
+  /** Brukeren har valgt en annen dags økt i dag (`from` = ukedagen økta hentes fra). */
+  todayChoice?: { date: string; from: number }
   /** Egne varigheter for løpeøktene (oppvarming, drag, pause, nedjogg) per type. */
   runSetups?: Partial<Record<import('./week').RunType, Partial<import('./week').IntervalSetup>>>
   /** Dager brukeren sto over, med grunn og kommentar. */

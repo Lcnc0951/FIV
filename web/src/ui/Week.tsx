@@ -11,7 +11,7 @@ import { useApp } from './state'
 import { adjustForHealth, SKIP_LABEL } from '../engine/absence'
 import { IntervalEditor } from './IntervalEditor'
 import { SickCard, SkipButton, useHealth } from './Skip'
-import { adjustDay, nextRun, WARNING_SIGNS, type RunLog } from '../engine/daily'
+import { adjustDay, nextRun, todayKey, WARNING_SIGNS, type RunLog } from '../engine/daily'
 import { useCycle, useToday } from './Daily'
 
 export type StartSession =
@@ -73,8 +73,16 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
   const cycle = useCycle()
   const runLogs = useRunLogs()
   const [shown, setShown] = useState(today)
+  const [picking, setPicking] = useState(false)
   const isToday = shown === today
-  const baseAdj = adjustDay(days[shown], isToday ? r?.level : undefined, cycle.deload && !cycle.finished)
+  // Valgt økt for i dag (standard: dagens program)
+  const choiceFrom = profile.todayChoice?.date === todayKey() && profile.todayChoice.from !== today ? profile.todayChoice.from : undefined
+  const choose = (from: number) => {
+    saveProfile({ ...profile, todayChoice: from === today ? undefined : { date: todayKey(), from } }, false)
+    setShown(today); setPicking(false)
+  }
+  const planned = isToday && choiceFrom != null ? { ...days[choiceFrom], weekday: today } : days[shown]
+  const baseAdj = adjustDay(planned, isToday ? r?.level : undefined, cycle.deload && !cycle.finished)
   const adj = isToday ? adjustForHealth(baseAdj, health.phase, health.lastSkip) : baseAdj
   const sickToday = isToday && health.phase.phase === 'sick'
   const skipped = isToday && !sickToday ? health.skippedToday : undefined
@@ -91,6 +99,12 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
         <p className="eyebrow accent">{isToday ? 'I dag' : WEEKDAYS[shown]} · {profile.trainingStart}–{profile.trainingEnd}</p>
         {done.has(shown) && <Tag tone="good">fullført</Tag>}
       </div>
+      {isToday && (
+        <button className="pick-session" onClick={() => setPicking(true)} aria-label="Velg hvilken økt du tar i dag">
+          <span className="muted small">{choiceFrom != null ? `Byttet til ${WEEKDAYS[choiceFrom].toLowerCase()}ens økt` : 'Dagens program'}</span>
+          <span className="small strong">Bytt økt ▾</span>
+        </button>
+      )}
       <h2>{dayTitle(d, s)}</h2>
       <p className="quote">«{motivation(d, new Date(Date.now() + (shown - today) * 86_400_000))}»</p>
       {adj.message && <p className="adjust small"><Icon name="info" size={14} /> {adj.message}</p>}
@@ -128,7 +142,24 @@ export function TodayCard({ start }: { start: (s: StartSession) => void }) {
           <button className="link small" onClick={() => saveProfile({ ...profile, skips: (profile.skips ?? []).filter((x) => x !== skipped) }, false)}>Angre, jeg trener likevel</button>
         </div>
       )}
+      {!isToday && days[shown].kind !== 'rest' && <button className="btn full" onClick={() => choose(shown)}>Ta {WEEKDAYS[shown].toLowerCase()}ens økt i dag</button>}
       {isToday && !skipped && d.kind !== 'rest' && !done.has(shown) && <SkipButton />}
+      <Sheet open={picking} onClose={() => setPicking(false)} title="Hvilken økt tar du i dag?">
+        <div className="stack-s">
+          {[days[today], ...days.filter((x) => x.weekday !== today)].map((x) => {
+            const isPlan = x.weekday === today
+            const on = (choiceFrom ?? today) === x.weekday
+            if (x.kind === 'rest' && !isPlan) return null
+            return (
+              <button key={x.weekday} className={`choice ${on ? 'on' : ''}`} onClick={() => choose(x.weekday)}>
+                <strong>{isPlan ? `Dagens program · ${dayTitle(x, strengthDay(x))}` : `${WEEKDAYS[x.weekday]} · ${dayTitle(x, strengthDay(x))}`}</strong>
+                <span>{done.has(x.weekday) ? 'Allerede gjort denne uka' : x.run && x.kind !== 'rest' ? RUN_INFO[x.run].summary : x.kind === 'strength' ? strengthDay(x)?.focus ?? 'Styrke' : 'Hvile'}</span>
+              </button>
+            )
+          })}
+          <p className="muted small">Valget gjelder bare i dag. Dagsform, syk-modus og progresjon brukes på økta du velger.</p>
+        </div>
+      </Sheet>
       {isToday && d.kind !== 'rest' && <p className="hint">{tip}</p>}
       <WeekStrip onPick={setShown} />
     </Card>

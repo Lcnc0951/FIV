@@ -385,3 +385,5 @@ textarea.input { width: 100%; box-sizing: border-box; resize: vertical; font: in
 .wheel-colon { font-family: var(--display); font-size: 2.6rem; font-weight: 700; padding-bottom: 26px; }
 .center-chips { justify-content: center; }
 .wheel-scroll { position: relative; z-index: 1; }
+.pick-session { display: flex; justify-content: space-between; align-items: center; width: 100%; border: 1px solid var(--line); background: var(--bg); color: var(--fg); border-radius: 12px; padding: 10px 12px; min-height: 44px; margin: 4px 0 2px; }
+.pick-session .strong { color: var(--accent); }
