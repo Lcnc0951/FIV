@@ -47,7 +47,7 @@ export function Home({ go, start }: { go: (tab: string, sub?: string) => void; s
       <MobilityTodayCard open={() => go('body', 'plager')} />
       <TodayCard start={start} />
       <ReportCard />
-      <SessionsCard />
+      <SessionsCard openHistory={() => go('oversikt')} />
       <WeightCard compact />
       <SleepCard />
 

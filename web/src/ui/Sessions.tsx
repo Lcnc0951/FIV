@@ -33,7 +33,7 @@ function summary(s: Session): string {
   return `${s.entries.length} øvelser · ${sets} sett${min ? ` · ${min} min` : ''}`
 }
 
-export function SessionsCard() {
+export function SessionsCard({ openHistory }: { openHistory?: () => void }) {
   const { data } = useApp()
   const [all, setAll] = useState(false)
   const [open, setOpen] = useState<Session | null>(null)
@@ -42,7 +42,7 @@ export function SessionsCard() {
   const shown = all ? sessions.slice(0, 30) : sessions.slice(0, 4)
   return (
     <Card>
-      <h3>Gjennomførte økter</h3>
+      <div className="row between"><h3>Gjennomførte økter</h3>{openHistory && <button className="link small" onClick={openHistory}>Oversikt og progresjon →</button>}</div>
       <div className="list">
         {shown.map((s) => {
           const missing = s.run && !s.run.avgHR && !s.run.km && !s.note

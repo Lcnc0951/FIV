@@ -3,6 +3,7 @@ import { openStore, type AppData, type Backend } from './data/store'
 import type { WorkoutDay } from './engine/generator'
 import type { Profile } from './engine/types'
 import { Body } from './ui/Body'
+import { History } from './ui/History'
 import { Home } from './ui/Home'
 import { Icon } from './ui/kit'
 import { Coach, ProfileView } from './ui/More'
@@ -16,11 +17,11 @@ import { RunTimer, type StartSession } from './ui/Week'
 const TABS = [
   ['home', 'Hjem', 'home'], ['body', 'Kropp', 'body'], ['scan', 'Skann', 'scan'], ['program', 'Program', 'list'], ['pt', 'PT', 'coach'],
 ] as const
-type Tab = (typeof TABS)[number][0] | 'profil'
+type Tab = (typeof TABS)[number][0] | 'profil' | 'oversikt'
 
 function readHash(): Tab {
   const h = location.hash.replace('#', '')
-  return (TABS.some((t) => t[0] === h) || h === 'profil' ? h : 'home') as Tab
+  return (TABS.some((t) => t[0] === h) || h === 'profil' || h === 'oversikt' ? h : 'home') as Tab
 }
 
 export default function App() {
@@ -78,6 +79,7 @@ function Shell() {
         {tab === 'program' && <Program startWorkout={startWorkout} />}
         {tab === 'pt' && <Coach />}
         {tab === 'profil' && <ProfileView onBack={() => go('home')} />}
+        {tab === 'oversikt' && <History onBack={() => go('home')} />}
       </main>
       <nav className="tabbar" aria-label="Hovedmeny">
         {TABS.map(([k, label, icon]) => (
